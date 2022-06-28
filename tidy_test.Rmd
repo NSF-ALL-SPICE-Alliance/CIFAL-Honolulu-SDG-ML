@@ -1,0 +1,38 @@
+---
+title: "tidy_test"
+author: "Connor Flynn"
+date: "6/28/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(readxl)
+options(scipen = 99)
+```
+
+```{r}
+goal1 <- read_xlsx(here("data/sdg_data/Goal1.xlsx"))
+
+```
+
+```{r}
+goal1 <- goal1 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+```{r}
+goal1_tidy <- goal1 %>% 
+  group_by(Indicator, GeoAreaCode) %>% 
+  summarise(MedianValue = median(Value))
+```
+
+```{r}
+goal1_wider <- goal1_tidy %>% 
+  pivot_wider(names_from = Indicator,
+              values_from = MedianValue)
+```
+
