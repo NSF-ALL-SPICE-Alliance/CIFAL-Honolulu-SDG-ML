@@ -13,26 +13,41 @@ library(readxl)
 options(scipen = 99)
 ```
 
+
+
+Import data
 ```{r}
 goal1 <- read_xlsx(here("data/sdg_data/Goal1.xlsx"))
 
 ```
 
+Convert Value Column to class numeric
 ```{r}
 goal1 <- goal1 %>% 
   mutate(Value = as.numeric(Value))
 ```
 
 
+Group in order to get median value form multiple years/categories of data
 ```{r}
-goal1_tidy <- goal1 %>% 
-  group_by(Indicator, GeoAreaCode) %>% 
+# goal1_tidy <- goal1 %>% 
+#   filter(Location == "ALLAREA" & Age == "ALLAGE" & Sex == "BOTHSEX")
+  
+
+
+goal1_tidy_grouped <- goal1 %>% 
+  group_by(SeriesCode, GeoAreaName) %>% 
   summarise(MedianValue = median(Value))
 ```
 
 ```{r}
-goal1_wider <- goal1_tidy %>% 
-  pivot_wider(names_from = Indicator,
+goal1_wider <- goal1_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesCode,
               values_from = MedianValue)
+```
+
+```{r}
+bahamas_test <- goal1 %>% 
+  filter(GeoAreaName == "Bahamas" & SeriesCode == "SD_XPD_ESED")
 ```
 
