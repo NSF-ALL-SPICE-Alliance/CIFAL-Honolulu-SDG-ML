@@ -10,6 +10,11 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(readxl)
+
+library(tidyverse)
+library(cluster)
+library(factoextra)
+library(gridExtra)
 options(scipen = 99)
 ```
 
@@ -36,18 +41,37 @@ Group in order to get median value form multiple years/categories of data
 
 
 goal1_tidy_grouped <- goal1 %>% 
-  group_by(SeriesCode, GeoAreaName) %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
   summarise(MedianValue = median(Value))
 ```
 
 ```{r}
 goal1_wider <- goal1_tidy_grouped %>% 
-  pivot_wider(names_from = SeriesCode,
+  pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 ```
 
 ```{r}
 bahamas_test <- goal1 %>% 
   filter(GeoAreaName == "Bahamas" & SeriesCode == "SD_XPD_ESED")
+
+
+fiji_test <- goal1 %>% 
+  filter(GeoAreaName == "Fiji" & SeriesCode == "DC_ODA_POVLG")
+
+guam_test <- goal1 %>% 
+  filter(GeoAreaName == "Guam")
+```
+
+```{r}
+kmeans2 <- kmeans(goal1_wider, centers = 2, nstart = 25)
+```
+
+NA's
+
+```{r}
+na_rows = rowSums(is.na(goal1_wider))
+
+which(na_rows >40)
 ```
 
