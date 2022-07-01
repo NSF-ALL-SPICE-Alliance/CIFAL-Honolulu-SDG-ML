@@ -1,0 +1,397 @@
+---
+title: "import_tidy_join"
+author: "Connor Flynn"
+date: "6/30/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(readxl)
+library(xlsx)
+library
+library(tidyverse)
+library(cluster)
+library(factoextra)
+library(gridExtra)
+options(scipen = 99)
+```
+
+Goal 1
+
+
+Import data
+```{r}
+goal1 <- read_csv(here("data/sdg_data/Goal1.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal1 <- goal1 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal1_tidy_grouped <- goal1 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value))
+```
+
+
+```{r}
+goal1_wider <- goal1_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+```
+
+
+Goal 2
+
+
+Import data
+```{r}
+goal2 <- read_csv(here("data/sdg_data/Goal2.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal2 <- goal2 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+# goal1_tidy <- goal1 %>% 
+#   filter(Location == "ALLAREA" & Age == "ALLAGE" & Sex == "BOTHSEX")
+  
+
+
+goal2_tidy_grouped <- goal2 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value))
+```
+
+
+```{r}
+goal2_wider <- goal2_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal2_wider <- goal2_wider[-10,]
+```
+
+
+```{r}
+goals_1_2_joined <- full_join(goal1_wider, goal2_wider, by = "GeoAreaName")
+```
+
+Goal 3 
+
+Import data
+```{r}
+goal3 <- read_csv(here("data/sdg_data/Goal3.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal3 <- goal3 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal3_tidy_grouped <- goal3 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value))
+```
+
+
+```{r}
+goal3_wider <- goal3_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+```
+
+
+```{r}
+goals_1_2_3_joined <- full_join(goals_1_2_joined, goal3_wider)
+```
+
+
+Goal 4
+
+Import data
+```{r}
+goal4 <- read_csv(here("data/sdg_data/Goal4.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal4 <- goal4 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal4_tidy_grouped <- goal4 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value))
+```
+
+
+```{r}
+goal4_wider <- goal4_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue) 
+
+goal4_wider <- goal4_wider[-49,]
+```
+
+
+```{r}
+goals_1_2_3_4_joined <- full_join(goals_1_2_3_joined, goal4_wider)
+```
+
+
+Goal 5
+
+Import data
+```{r}
+goal5 <- read_csv(here("data/sdg_data/Goal5.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal5 <- goal5 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal5_tidy_grouped <- goal5 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value))
+```
+
+
+```{r}
+goal5_wider <- goal5_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal5_wider <- goal5_wider[-42,]
+```
+
+
+```{r}
+goals_1_2_3_4_5_joined <- full_join(goals_1_2_3_4_joined, goal5_wider)
+```
+
+
+Goal 6
+
+Import data
+```{r}
+goal6 <- read_csv(here("data/sdg_data/Goal6.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal6 <- goal6 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal6_tidy_grouped <- goal6 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value))
+```
+
+
+```{r}
+goal6_wider <- goal6_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal6_wider <- goal6_wider[-52,]
+```
+
+
+```{r}
+goals_1_2_3_4_5_6_joined <- full_join(goals_1_2_3_4_5_joined, goal6_wider)
+```
+
+
+Goal 7
+
+Import data
+```{r}
+goal7 <- read_csv(here("data/sdg_data/Goal7.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal7 <- goal7 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal7_tidy_grouped <- goal7 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value))
+```
+
+
+```{r}
+goal7_wider <- goal7_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal7_wider <- goal7_wider[-8,]
+```
+
+
+```{r}
+goals_1_2_3_4_5_6_7_joined <- full_join(goals_1_2_3_4_5_6_joined, goal7_wider)
+```
+
+
+Goal 8 
+
+Import data
+```{r}
+goal8 <- read_csv(here("data/sdg_data/Goal8.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal8 <- goal8 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal8_tidy_grouped <- goal8 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value))
+```
+
+
+```{r}
+goal8_wider <- goal8_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+```
+
+
+```{r}
+goals_1_2_3_4_5_6_7_8_joined <- full_join(goals_1_2_3_4_5_6_7_joined, goal8_wider)
+```
+
+
+
+Goal 9
+
+Import data
+```{r}
+goal9 <- read_csv(here("data/sdg_data/Goal9.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal9 <- goal9 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal9_tidy_grouped <- goal9 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value))
+```
+
+
+```{r}
+goal9_wider <- goal9_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal9_wider <- goal9_wider[-19,]
+```
+
+
+```{r}
+goals_1_2_3_4_5_6_7_8_9_joined <- full_join(goals_1_2_3_4_5_6_7_8_joined, goal9_wider)
+```
+
+
+Goal 10
+
+Import data
+```{r}
+goal10 <- read_csv(here("data/sdg_data/Goal10.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal10 <- goal10 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal10_tidy_grouped <- goal10 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value))
+```
+
+
+```{r}
+goal10_wider <- goal10_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal10_wider <- goal10_wider[-19,]
+```
+
+
+```{r}
+goals_1_2_3_4_5_6_7_8_9_10_joined <- full_join(goals_1_2_3_4_5_6_7_8_9_joined, goal10_wider)
+```
+
+
+
