@@ -11,7 +11,7 @@ library(tidyverse)
 library(here)
 library(readxl)
 library(xlsx)
-library
+library(ClustImpute)
 library(tidyverse)
 library(cluster)
 library(factoextra)
@@ -393,5 +393,52 @@ goal10_wider <- goal10_wider[-19,]
 goals_1_2_3_4_5_6_7_8_9_10_joined <- full_join(goals_1_2_3_4_5_6_7_8_9_joined, goal10_wider)
 ```
 
+Removing NA's
 
+```{r}
+sdg_1_10 <- goals_1_2_3_4_5_6_7_8_9_10_joined
+```
+
+
+```{r}
+sdg_1_10_less_na <- sdg_1_10[, which(colMeans(!is.na(sdg_1_10)) > 0.1)]
+```
+
+
+ClustImpute
+
+```{r}
+sdg_1_10_less_na <- sdg_1_10_less_na %>% 
+  remove_rownames %>% 
+  column_to_rownames(var="GeoAreaName")
+```
+
+
+```{r}
+ 
+nums <- unlist(lapply(sdg_1_10, is.numeric), use.names = FALSE)
+```
+
+
+```{r}
+res <- ClustImpute(sdg_1_10_less_na, nr_cluster = 3)
+```
+
+
+```{r}
+res_centroids <- res$centroids
+
+res_complete_data <- res$complete_data
+```
+
+
+
+```{r}
+kmeans2 <- kmeans(res_complete_data, center = 3, nstart = 25)
+```
+
+
+```{r}
+fviz_cluster(kmeans2, data = res_complete_data)
+```
 
