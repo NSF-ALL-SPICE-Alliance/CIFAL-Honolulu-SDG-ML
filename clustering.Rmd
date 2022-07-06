@@ -1,0 +1,88 @@
+---
+title: "Clustering"
+author: "Connor Flynn"
+date: "7/6/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(readxl)
+library(xlsx)
+library(ClustImpute)
+library(tidyverse)
+library(cluster)
+library(factoextra)
+library(gridExtra)
+options(scipen = 99)
+```
+
+
+Read In Data
+```{r}
+sdg_indicators <- read_csv(here("data/sdg_data/sdg_indicators.csv"))
+```
+
+Remove Singapore 
+
+```{r}
+sdg_indicators <- sdg_indicators[-35,]
+```
+
+
+
+Convert values of first row to row names
+```{r}
+sdg_indicators <- sdg_indicators %>% 
+  remove_rownames %>% 
+  column_to_rownames(var="GeoAreaName")
+```
+
+
+Only select columns where certain % of rows have values that are not NA
+```{r}
+sdg_indicators_less_na <- sdg_indicators[, which(colMeans(!is.na(sdg_indicators)) > 0.25)]
+```
+
+
+ClustImpute
+
+run ClustImpute function to receive ClustImpute object
+```{r}
+res <- ClustImpute(sdg_indicators_less_na, nr_cluster = 5)
+```
+
+
+
+within ClustImpute object, scale the imputed data
+```{r}
+res_complete_data <- res$complete_data
+# res_complete_data_scaled <- scale(res$complete_data)
+```
+
+
+Remove columns with 0 variance
+
+```{r}
+res_complete_data_no_variance <- res_complete_data[, sapply(res_complete_data, var) != 0]
+```
+
+
+
+create visualization to decide appropriate # of clusters for kmeans function
+```{r}
+fviz_nbclust(res_complete_data_no_variance, kmeans, method = "wss")
+```
+
+
+```{r}
+set.seed(123)
+kmeans2 <- kmeans(res_complete_data_no_variance, center = 3, nstart = 100)
+```
+
+```{r}
+fviz_cluster(kmeans2, data = res_complete_data_no_variance)
+```
+
