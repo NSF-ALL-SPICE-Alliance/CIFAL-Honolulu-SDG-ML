@@ -770,6 +770,12 @@ sdg_1_17_joined <- full_join(sdg_1_16_joined, goal17_wider, by = "GeoAreaName")
 sdg_1_17_joined_duplicate_check <- sdg_1_17_joined[!duplicated(as.list(sdg_1_17_joined))]
 ```
 
+Correlation matrix 
+
+```{r}
+mis_ind <- is.na(sdg_1_17_joined) # missing indicator
+corrplot(cor(mis_ind),method="number")
+```
 
 
 Write CSV
