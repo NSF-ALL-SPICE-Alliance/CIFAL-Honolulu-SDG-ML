@@ -21,6 +21,7 @@ library(gridExtra)
 library(corrplot)
 library(janitor)
 options(scipen = 99)
+options(ggrepel.max.overlaps = Inf)
 ```
 
 Read In Data
@@ -32,7 +33,8 @@ sdg_indicators <- read_csv(here("data/sdg_data/sdg_indicators.csv"))
 Remove Singapore
 
 ```{r}
-sdg_indicators <- sdg_indicators[-35,]
+sdg_indicators <- sdg_indicators %>% 
+  filter(GeoAreaName != "Singapore")
 ```
 
 Convert values of first row to row names
@@ -86,9 +88,26 @@ kmeans2 <- kmeans(res_complete_data_no_variance, center = 3, nstart = 100)
 ```
 
 ```{r}
-fviz_cluster(kmeans2, data = res_complete_data_no_variance)
+fviz_cluster(kmeans2, data = res_complete_data_no_variance,
+geom = c("text","point"),
+             repel = TRUE,            # Avoid label overlapping
+             show.clust.cent = TRUE, # Show cluster centers
+             palette = "lancet",         # Color palette see ?ggpubr::ggpar
+             ggtheme = theme_bw()+
+              theme(axis.text.x = element_text( hjust = 0.5, vjust = 0.5, size=15),
+        axis.title.x =element_text(size=20),
+        axis.text.y = element_text(hjust = 0.5, vjust = 0.5, size=15),
+        axis.title.y =element_text(size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        strip.text = element_text(size=25)))
 ```
 
+```{r}
+sil <- silhouette(kmeans2$cluster, dist(res_complete_data_no_variance))
+fviz_silhouette(sil)
+```
 
 
 Cluster Goal 1

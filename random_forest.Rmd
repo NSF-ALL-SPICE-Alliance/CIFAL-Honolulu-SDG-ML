@@ -1,0 +1,54 @@
+---
+title: "random forest"
+author: "Connor Flynn"
+date: "7/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+library(randomForest)
+library(janitor)
+```
+
+
+```{r}
+clust_imputed_indicators <- read_csv(here("data/sdg_data/clust_impute_all_indicators"))
+```
+
+
+
+
+```{r}
+clust_imputed_indicators <- clean_names(clust_imputed_indicators)
+```
+
+
+```{r}
+rf <- randomForest(proportion_of_population_below_international_poverty_line_percent ~ ., data = clust_imputed_indicators, 
+                   importance = TRUE)
+```
+
+```{r}
+rf
+```
+
+```{r}
+ImpData <- as.data.frame(importance(rf))
+ImpData$Var.Names <- row.names(ImpData)
+
+ggplot(ImpData, aes(x=Var.Names, y=`%IncMSE`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`%IncMSE`), color="skyblue") +
+  geom_point(aes(size = IncNodePurity), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
