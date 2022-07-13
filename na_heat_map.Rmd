@@ -3,6 +3,8 @@ title: "na heat map"
 author: "Connor Flynn"
 date: "7/12/2022"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -940,7 +942,7 @@ heatmap(sdg_na_percentages_matrix, Rowv = NA, Colv = NA,
 ```
 
 ```{r}
-pheatmap(sdg_na_percentages_matrix, treeheight_row = 0, treeheight_col = 0, display_numbers = TRUE, fontsize_number = 4, angle_col = 45)
+f <- pheatmap(sdg_na_percentages_matrix, treeheight_row = 0, treeheight_col = 0, display_numbers = TRUE, fontsize_number = 6, angle_col = 45)
 ```
 ```{r}
 heatmap.2(sdg_na_percentages_matrix, dendrogram = 'none', cellnote = sdg_na_percentages_matrix, notecex = 0.1)
