@@ -1,0 +1,175 @@
+---
+title: "clustImpute"
+author: "Connor Flynn"
+date: "7/13/2022"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+library(cluster)
+library(factoextra)
+library(randomForest)
+library(ClustImpute)
+options(scipen = 99)
+options(ggrepel.max.overlaps = Inf)
+```
+
+```{r}
+sdg_indicators <- read_csv(here("data/sdg_data/sdg_indicators.csv"))
+```
+
+```{r}
+sdg_indicators <- sdg_indicators %>% 
+  remove_rownames %>% 
+  column_to_rownames(var="GeoAreaName")
+```
+
+
+```{r}
+sdg_indicators <- sdg_indicators %>% 
+  clean_names()
+```
+
+
+```{r}
+sdg_indicators_less_na <- sdg_indicators[, which(colMeans(!is.na(sdg_indicators)) > 0.4)]
+```
+
+
+Impute using ClustImpute
+
+```{r}
+res <- ClustImpute(sdg_indicators_less_na, nr_cluster = 3)
+```
+
+
+```{r}
+
+sdg_indicators_ClustImpute <- res$complete_data
+
+```
+
+
+Remove columns with 0 variance
+
+```{r}
+sdg_indicators_ClustImpute_no_variance <- sdg_indicators_ClustImpute[, sapply(sdg_indicators_ClustImpute, var) != 0]
+```
+
+
+Drop Singapore and Cuba
+
+```{r}
+sdg_indicators_ClustImpute_no_variance <- sdg_indicators_ClustImpute_no_variance[-35,]
+```
+
+```{r}
+sdg_indicators_ClustImpute_no_variance <- sdg_indicators_ClustImpute_no_variance[-5,]
+```
+
+
+
+
+
+```{r}
+fviz_nbclust(sdg_indicators_ClustImpute_no_variance, kmeans, method = "wss")
+```
+
+```{r}
+set.seed(3)
+kmeans2 <- kmeans(sdg_indicators_ClustImpute_no_variance, center = 3, nstart = 100)
+```
+
+```{r}
+fviz_cluster(kmeans2, data = sdg_indicators_ClustImpute_no_variance,
+geom = c("text","point"),
+             repel = TRUE,            # Avoid label overlapping
+             show.clust.cent = TRUE, # Show cluster centers
+             palette = "lancet",         # Color palette see ?ggpubr::ggpar
+             ggtheme = theme_bw()+
+              theme(axis.text.x = element_text( hjust = 0.5, vjust = 0.5, size=15),
+        axis.title.x =element_text(size=20),
+        axis.text.y = element_text(hjust = 0.5, vjust = 0.5, size=15),
+        axis.title.y =element_text(size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        strip.text = element_text(size=25)))
+```
+
+```{r}
+ggplot(data = sdg_indicators_ClustImpute_no_variance, aes(y = rownames(sdg_indicators_ClustImpute_no_variance), 
+                                            x =  proportion_of_population_below_international_poverty_line_percent,
+                                            fill = rownames(sdg_indicators_ClustImpute_no_variance))) +
+  geom_col(show.legend = FALSE) + 
+  scale_fill_manual(values = c(Anguilla                         = "blue",  
+                               Belize                     = "blue",
+                               "Cook Islands"                     = "blue",       
+                               Palau = "blue",
+                               "Puerto Rico"                      = "blue",   
+                               Suriname              = "blue",
+                              " Trinidad and Tobago"     = "blue",
+                               "United States Virgin Islands" = "blue",
+                               Aruba                          = "blue",
+                               Bahamas                         = "blue",
+                               Barbados           = "blue",
+                               "British Virgin Islands" = "blue",
+                               Dominica                         = "blue", 
+                               Grenada                          = "blue", 
+                               Guyana = "blue",
+                               "Saint Vincent and the Grenadines"= "blue",
+                               "Antigua and Barbuda"            = "blue",
+                               "Saint Kitts and Nevis"            = "blue",              
+                               Curaçao                    = "blue",
+                              " New Caledonia" = "blue",
+                               "Sint Maarten (Dutch part) "       = "blue",           
+                               "American Samoa"                 = "blue",
+                               "French Polynesia"                 = "blue",            
+                               Guam = "blue",
+                               Niue         = "blue",
+                               "Northern Mariana Islands"         = "blue",              
+                               Montserrat = "blue"))
+```
+
+
+
+
+
+
+Random Forest
+
+
+```{r}
+ClustImpute_rf <- randomForest(proportion_of_population_below_international_poverty_line_percent ~ ., data = sdg_indicators_ClustImpute_no_variance, 
+                   importance = TRUE)
+```
+
+```{r}
+ClustImpute_rf
+```
+
+```{r}
+ImpData <- as.data.frame(importance(ClustImpute_rf))
+ImpData$Var.Names <- row.names(ImpData)
+
+# ggplot(ImpData, aes(x=Var.Names, y=`%IncMSE`)) +
+#   geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`%IncMSE`), color="skyblue") +
+#   geom_point(aes(size = IncNodePurity), color="blue", alpha=0.6) +
+#   theme_light() +
+#   coord_flip() +
+#   theme(
+#     legend.position="bottom",
+#     panel.grid.major.y = element_blank(),
+#     panel.border = element_blank(),
+#     axis.ticks.y = element_blank()
+#   )
+
+View(ImpData)
+```
+
