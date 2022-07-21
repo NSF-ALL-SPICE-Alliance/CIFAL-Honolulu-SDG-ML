@@ -10,10 +10,9 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(tidyverse)
-library(dplyr)
-library(plyr)
 library(pheatmap)
-library(gplots)
+library(here)
+library(plyr) #wierd interaction that stops here form working
 ```
 
 
@@ -38,12 +37,24 @@ goal1 <- goal1 %>%
 ```
 
 
+```{r}
+goal1$Value[is.nan(goal1$Value)]<-NA
+```
+
+
+```{r}
+goal1$GeoAreaName <- gsub(" ", "_", goal1$GeoAreaName)
+
+goal1$SeriesDescription <- gsub(" ", "_", goal1$SeriesDescription)
+```
+
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal1_tidy_grouped <- goal1 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -86,11 +97,22 @@ goal2 <- goal2 %>%
 ```
 
 
+```{r}
+goal2$Value[is.nan(goal2$Value)]<-NA
+```
+
+```{r}
+goal2$GeoAreaName <- gsub(" ", "_", goal2$GeoAreaName)
+
+goal2$SeriesDescription <- gsub(" ", "_", goal2$SeriesDescription)
+```
+
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 goal2_tidy_grouped <- goal2 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -100,7 +122,7 @@ goal2_wider <- goal2_tidy_grouped %>%
               values_from = MedianValue)
 
 goal2_wider <- goal2_wider  %>% 
-  filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+  filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 ```{r}
@@ -134,12 +156,23 @@ goal3 <- goal3 %>%
 ```
 
 
+```{r}
+goal3$Value[is.nan(goal3$Value)]<-NA
+```
+
+```{r}
+goal3$GeoAreaName <- gsub(" ", "_", goal3$GeoAreaName)
+
+goal3$SeriesDescription <- gsub(" ", "_", goal3$SeriesDescription)
+```
+
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal3_tidy_grouped <- goal3 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -183,12 +216,23 @@ goal4 <- goal4 %>%
 ```
 
 
+```{r}
+goal4$Value[is.nan(goal4$Value)]<-NA
+```
+
+
+```{r}
+goal4$GeoAreaName <- gsub(" ", "_", goal4$GeoAreaName)
+
+goal4$SeriesDescription <- gsub(" ", "_", goal4$SeriesDescription)
+```
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal4_tidy_grouped <- goal4 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -198,7 +242,7 @@ goal4_wider <- goal4_tidy_grouped %>%
               values_from = MedianValue) 
 
 goal4_wider <- goal4_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 
@@ -233,12 +277,23 @@ goal5 <- goal5 %>%
 ```
 
 
+```{r}
+goal5$Value[is.nan(goal5$Value)]<-NA
+```
+
+
+```{r}
+goal5$GeoAreaName <- gsub(" ", "_", goal5$GeoAreaName)
+
+goal5$SeriesDescription <- gsub(" ", "_", goal5$SeriesDescription)
+```
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal5_tidy_grouped <- goal5 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -248,7 +303,7 @@ goal5_wider <- goal5_tidy_grouped %>%
               values_from = MedianValue)
 
 goal5_wider <- goal5_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 ```{r}
@@ -284,12 +339,23 @@ goal6 <- goal6 %>%
 ```
 
 
+```{r}
+goal6$Value[is.nan(goal6$Value)]<-NA
+```
+
+
+```{r}
+goal6$GeoAreaName <- gsub(" ", "_", goal6$GeoAreaName)
+
+goal6$SeriesDescription <- gsub(" ", "_", goal6$SeriesDescription)
+```
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal6_tidy_grouped <- goal6 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -299,7 +365,7 @@ goal6_wider <- goal6_tidy_grouped %>%
               values_from = MedianValue)
 
 goal6_wider <- goal6_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 
@@ -336,12 +402,22 @@ goal7 <- goal7 %>%
 ```
 
 
+```{r}
+goal7$Value[is.nan(goal7$Value)]<-NA
+```
+
+```{r}
+goal7$GeoAreaName <- gsub(" ", "_", goal7$GeoAreaName)
+
+goal7$SeriesDescription <- gsub(" ", "_", goal7$SeriesDescription)
+```
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal7_tidy_grouped <- goal7 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -351,7 +427,7 @@ goal7_wider <- goal7_tidy_grouped %>%
               values_from = MedianValue)
 
 goal7_wider <- goal7_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 ```{r}
@@ -388,12 +464,23 @@ goal8 <- goal8 %>%
 ```
 
 
+```{r}
+goal8$Value[is.nan(goal8$Value)]<-NA
+```
+
+
+```{r}
+goal8$GeoAreaName <- gsub(" ", "_", goal8$GeoAreaName)
+
+goal8$SeriesDescription <- gsub(" ", "_", goal8$SeriesDescription)
+```
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal8_tidy_grouped <- goal8 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -436,12 +523,23 @@ goal9 <- goal9 %>%
 ```
 
 
+```{r}
+goal9$Value[is.nan(goal9$Value)]<-NA
+```
+
+
+```{r}
+goal9$GeoAreaName <- gsub(" ", "_", goal9$GeoAreaName)
+
+goal9$SeriesDescription <- gsub(" ", "_", goal9$SeriesDescription)
+```
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal9_tidy_grouped <- goal9 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -451,7 +549,7 @@ goal9_wider <- goal9_tidy_grouped %>%
               values_from = MedianValue)
 
 goal9_wider <- goal9_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 
@@ -487,12 +585,23 @@ goal10 <- goal10 %>%
 ```
 
 
+```{r}
+goal10$Value[is.nan(goal10$Value)]<-NA
+```
+
+
+```{r}
+goal10$GeoAreaName <- gsub(" ", "_", goal10$GeoAreaName)
+
+goal10$SeriesDescription <- gsub(" ", "_", goal10$SeriesDescription)
+```
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal10_tidy_grouped <- goal10 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -502,7 +611,7 @@ goal10_wider <- goal10_tidy_grouped %>%
               values_from = MedianValue)
 
 goal10_wider <- goal10_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 ```{r}
@@ -538,12 +647,22 @@ goal11 <- goal11 %>%
 ```
 
 
+```{r}
+goal11$Value[is.nan(goal11$Value)]<-NA
+```
+
+```{r}
+goal11$GeoAreaName <- gsub(" ", "_", goal11$GeoAreaName)
+
+goal11$SeriesDescription <- gsub(" ", "_", goal11$SeriesDescription)
+```
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal11_tidy_grouped <- goal11 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm =TRUE))
 ```
 
 
@@ -553,7 +672,7 @@ goal11_wider <- goal11_tidy_grouped %>%
               values_from = MedianValue)
 
 goal11_wider <- goal11_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 ```{r}
@@ -588,12 +707,22 @@ goal12 <- goal12 %>%
 ```
 
 
+```{r}
+goal12$Value[is.nan(goal12$Value)]<-NA
+```
+
+```{r}
+goal12$GeoAreaName <- gsub(" ", "_", goal12$GeoAreaName)
+
+goal12$SeriesDescription <- gsub(" ", "_", goal12$SeriesDescription)
+```
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal12_tidy_grouped <- goal12 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -603,7 +732,7 @@ goal12_wider <- goal12_tidy_grouped %>%
               values_from = MedianValue)
 
 goal12_wider <- goal12_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
            #GeoAreaName != "Small island developing States (SIDS)")
 ```
 
@@ -641,13 +770,22 @@ goal13 <- goal13 %>%
   mutate(Value = as.numeric(Value))
 ```
 
+```{r}
+goal13$Value[is.nan(goal13$Value)]<-NA
+```
+
+```{r}
+goal13$GeoAreaName <- gsub(" ", "_", goal13$GeoAreaName)
+
+goal13$SeriesDescription <- gsub(" ", "_", goal13$SeriesDescription)
+```
 
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal13_tidy_grouped <- goal13 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -657,7 +795,7 @@ goal13_wider <- goal13_tidy_grouped %>%
               values_from = MedianValue)
 
 goal13_wider <- goal13_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
            #GeoAreaName != "Small island developing States (SIDS)")
 ```
 
@@ -696,12 +834,23 @@ goal14 <- goal14 %>%
 ```
 
 
+```{r}
+goal14$Value[is.nan(goal14$Value)]<-NA
+```
+
+
+```{r}
+goal14$GeoAreaName <- gsub(" ", "_", goal14$GeoAreaName)
+
+goal14$SeriesDescription <- gsub(" ", "_", goal14$SeriesDescription)
+```
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal14_tidy_grouped <- goal14 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -711,7 +860,7 @@ goal14_wider <- goal14_tidy_grouped %>%
               values_from = MedianValue)
 
 goal14_wider <- goal14_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
            #GeoAreaName != "Small island developing States (SIDS)")
 ```
 
@@ -748,13 +897,23 @@ goal15 <- goal15 %>%
   mutate(Value = as.numeric(Value))
 ```
 
+```{r}
+goal15$Value[is.nan(goal15$Value)]<-NA
+```
+
+```{r}
+goal15$GeoAreaName <- gsub(" ", "_", goal15$GeoAreaName)
+
+goal15$SeriesDescription <- gsub(" ", "_", goal15$SeriesDescription)
+```
+
 
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal15_tidy_grouped <- goal15 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -764,7 +923,7 @@ goal15_wider <- goal15_tidy_grouped %>%
               values_from = MedianValue)
 
 goal15_wider <- goal15_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
            #GeoAreaName != "Small island developing States (SIDS)")
 ```
 
@@ -804,12 +963,23 @@ goal16 <- goal16 %>%
 ```
 
 
+```{r}
+goal16$Value[is.nan(goal16$Value)]<-NA
+```
+
+
+```{r}
+goal16$GeoAreaName <- gsub(" ", "_", goal16$GeoAreaName)
+
+goal16$SeriesDescription <- gsub(" ", "_", goal16$SeriesDescription)
+```
+
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal16_tidy_grouped <- goal16 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -819,7 +989,7 @@ goal16_wider <- goal16_tidy_grouped %>%
               values_from = MedianValue)
 
 goal16_wider <- goal16_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
            #GeoAreaName != "Small island developing States (SIDS)")
 ```
 
@@ -857,13 +1027,22 @@ goal17 <- goal17 %>%
   mutate(Value = as.numeric(Value))
 ```
 
+```{r}
+goal17$Value[is.nan(goal17$Value)]<-NA
+```
+
+```{r}
+goal17$GeoAreaName <- gsub(" ", "_", goal17$GeoAreaName)
+
+goal17$SeriesDescription <- gsub(" ", "_", goal17$SeriesDescription)
+```
 
 Group in order to get median value form multiple years/categories of data
 ```{r}
 
 goal17_tidy_grouped <- goal17 %>% 
   group_by(SeriesDescription, GeoAreaName) %>% 
-  summarise(MedianValue = median(Value))
+  summarise(MedianValue = median(Value, na.rm = TRUE))
 ```
 
 
@@ -873,7 +1052,7 @@ goal17_wider <- goal17_tidy_grouped %>%
               values_from = MedianValue)
 
 goal17_wider <- goal17_wider %>% 
-    filter(GeoAreaName != "Bonaire, Sint Eustatius and Saba")
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
            #GeoAreaName != "Small island developing States (SIDS)")
 ```
 
@@ -932,21 +1111,13 @@ sdg_na_percentages <- sdg_na_percentages %>%
 sdg_na_percentages_matrix <- data.matrix(sdg_na_percentages)
 ```
 
-```{r}
-heatmap(sdg_na_percentages_matrix, Colv=NA, Rowv=NA, scale = 'none')
-```
 
-```{r}
-heatmap(sdg_na_percentages_matrix, Rowv = NA, Colv = NA, 
-        col = colorRampPalette(brewer.pal(8,"Blues"))(3))
-```
+
 
 ```{r}
 f <- pheatmap(sdg_na_percentages_matrix, treeheight_row = 0, treeheight_col = 0, display_numbers = TRUE, fontsize_number = 6, angle_col = 45)
 ```
-```{r}
-heatmap.2(sdg_na_percentages_matrix, dendrogram = 'none', cellnote = sdg_na_percentages_matrix, notecex = 0.1)
-```
+
 
 ```{r}
 

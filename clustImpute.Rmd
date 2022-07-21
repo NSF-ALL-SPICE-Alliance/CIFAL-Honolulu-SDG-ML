@@ -25,16 +25,18 @@ sdg_indicators <- read_csv(here("data/sdg_data/sdg_indicators.csv"))
 ```
 
 ```{r}
-sdg_indicators <- sdg_indicators %>% 
-  remove_rownames %>% 
-  column_to_rownames(var="GeoAreaName")
+sdg_indicators<- sdg_indicators %>% 
+  filter(geo_area_name != "Cuba",
+         geo_area_name != "Singapore")
 ```
 
 
 ```{r}
 sdg_indicators <- sdg_indicators %>% 
-  clean_names()
+  remove_rownames %>% 
+  column_to_rownames(var="geo_area_name")
 ```
+
 
 
 ```{r}
@@ -63,19 +65,6 @@ sdg_indicators_ClustImpute_no_variance <- sdg_indicators_ClustImpute[, sapply(sd
 ```
 
 
-Drop Singapore and Cuba
-
-```{r}
-sdg_indicators_ClustImpute_no_variance <- sdg_indicators_ClustImpute_no_variance[-35,]
-```
-
-```{r}
-sdg_indicators_ClustImpute_no_variance <- sdg_indicators_ClustImpute_no_variance[-5,]
-```
-
-
-
-
 
 ```{r}
 fviz_nbclust(sdg_indicators_ClustImpute_no_variance, kmeans, method = "wss")
@@ -83,7 +72,7 @@ fviz_nbclust(sdg_indicators_ClustImpute_no_variance, kmeans, method = "wss")
 
 ```{r}
 set.seed(3)
-kmeans2 <- kmeans(sdg_indicators_ClustImpute_no_variance, center = 3, nstart = 100)
+kmeans2 <- kmeans(sdg_indicators_ClustImpute_no_variance, center = 4, nstart = 100)
 ```
 
 ```{r}
@@ -103,43 +92,209 @@ geom = c("text","point"),
         strip.text = element_text(size=25)))
 ```
 
+
+
+True vs Imputed Data Comparisons
+
+Goal 1
+
+```{r}
+goal1_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators$proportion_of_population_below_international_poverty_line_percent))]
+
+cat(paste(goal1_na_example),sep=",")
+```
+
+
+
 ```{r}
 ggplot(data = sdg_indicators_ClustImpute_no_variance, aes(y = rownames(sdg_indicators_ClustImpute_no_variance), 
                                             x =  proportion_of_population_below_international_poverty_line_percent,
                                             fill = rownames(sdg_indicators_ClustImpute_no_variance))) +
   geom_col(show.legend = FALSE) + 
-  scale_fill_manual(values = c(Anguilla                         = "blue",  
-                               Belize                     = "blue",
-                               "Cook Islands"                     = "blue",       
+  scale_fill_manual(values = c(Anguilla = "blue",  
+                               Belize = "blue",
+                               Cook_Islands = "blue",       
                                Palau = "blue",
-                               "Puerto Rico"                      = "blue",   
-                               Suriname              = "blue",
-                              " Trinidad and Tobago"     = "blue",
-                               "United States Virgin Islands" = "blue",
-                               Aruba                          = "blue",
-                               Bahamas                         = "blue",
-                               Barbados           = "blue",
-                               "British Virgin Islands" = "blue",
-                               Dominica                         = "blue", 
-                               Grenada                          = "blue", 
+                               Puerto_Rico = "blue",   
+                               Suriname = "blue",
+                               Trinidad_and_Tobago = "blue",
+                               United_States_Virgin_Islands = "blue",
+                               Aruba = "blue",
+                               Bahamas = "blue",
+                               Barbados = "blue",
+                               British_Virgin_Islands = "blue",
+                               Dominica = "blue", 
+                               Grenada = "blue", 
                                Guyana = "blue",
-                               "Saint Vincent and the Grenadines"= "blue",
-                               "Antigua and Barbuda"            = "blue",
-                               "Saint Kitts and Nevis"            = "blue",              
-                               Curaçao                    = "blue",
-                              " New Caledonia" = "blue",
-                               "Sint Maarten (Dutch part) "       = "blue",           
-                               "American Samoa"                 = "blue",
-                               "French Polynesia"                 = "blue",            
+                               Saint_Vincent_and_the_Grenadines = "blue",
+                               Antigua_and_Barbuda = "blue",
+                               Saint_Kitts_and_Nevis = "blue",              
+                               Curaçao = "blue",
+                               New_Caledonia = "blue",
+                               "Sint_Maarten_(Dutch_part)" = "blue",           
+                               American_Samoa = "blue",
+                               French_Polynesia = "blue",            
                                Guam = "blue",
                                Niue         = "blue",
-                               "Northern Mariana Islands"         = "blue",              
+                               Northern_Mariana_Islands = "blue",              
+                               Montserrat = "blue"))
+```
+
+
+Goal 13
+
+```{r}
+goal13_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators$number_of_directly_affected_persons_attributed_to_disasters_per_100_000_population_number))]
+
+cat(paste(goal13_na_example),sep=",")
+
+```
+
+
+
+```{r}
+ggplot(data = sdg_indicators_ClustImpute_no_variance, aes(y = rownames(sdg_indicators_ClustImpute_no_variance), 
+                                            x =  number_of_directly_affected_persons_attributed_to_disasters_per_100_000_population_number,
+                                            fill = rownames(sdg_indicators_ClustImpute_no_variance))) +
+  geom_col(show.legend = FALSE)  +
+  scale_fill_manual(values = c(Anguilla = "blue",
+                               Dominican_Republic = "blue",
+                               Haiti = "blue",
+                               Puerto_Rico = "blue",
+                               Suriname = "blue",
+                               United_States_Virgin_Islands = "blue",
+                               Aruba = "blue",
+                               Bahamas = "blue",
+                               British_Virgin_Islands = "blue",
+                               Sao_Tome_and_Principe = "blue",
+                               Curaçao = "blue",
+                               Nauru = "blue",
+                               'Sint_Maarten_(Dutch_part)' = "blue",
+                               Montserrat = "blue"))
+
+
+
+
+```
+
+Goal 3
+
+```{r}
+goal3_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators$crude_death_rate_attributed_to_household_and_ambient_air_pollution_deaths_per_100_000_population))]
+
+cat(paste(goal3_na_example),sep=",")
+
+```
+
+```{r}
+ggplot(data = sdg_indicators_ClustImpute_no_variance, aes(y = rownames(sdg_indicators_ClustImpute_no_variance), 
+                                            x =  crude_death_rate_attributed_to_household_and_ambient_air_pollution_deaths_per_100_000_population,
+                                            fill = rownames(sdg_indicators_ClustImpute_no_variance))) +
+  geom_col(show.legend = FALSE)  +
+  scale_fill_manual(values = c(Anguilla = "blue",
+                               Cook_Islands = "blue",
+                               Palau = "blue",
+                               Puerto_Rico = "blue",
+                               United_States_Virgin_Islands = "blue",
+                               Aruba = "blue",
+                               British_Virgin_Islands = "blue",
+                               Dominica = "blue",
+                               Saint_Kitts_and_Nevis = "blue",
+                               Curaçao = "blue",
+                               Marshall_Islands = "blue",
+                               Nauru = "blue",
+                               Tuvalu = "blue",
+                               New_Caledonia = "blue",
+                               "Sint_Maarten_(Dutch_part)" = "blue",
+                               American_Samoa = "blue",
+                               French_Polynesia = "blue",
+                               Guam = "blue",
+                               Niue = "blue",
+                               Northern_Mariana_Islands = "blue",
+                               Montserrat = "blue"))
+```
+
+
+
+Goal 4 
+
+```{r}
+goal4_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators$proportion_of_schools_with_access_to_computers_for_pedagogical_purposes_by_education_level_percent))]
+
+cat(paste(goal4_na_example),sep=",")
+```
+
+
+```{r}
+ggplot(data = sdg_indicators_ClustImpute_no_variance, aes(y = rownames(sdg_indicators_ClustImpute_no_variance), 
+                                            x =  proportion_of_schools_with_access_to_computers_for_pedagogical_purposes_by_education_level_percent,
+                                            fill = rownames(sdg_indicators_ClustImpute_no_variance))) +
+  geom_col(show.legend = FALSE)  +
+  scale_fill_manual(values = c(Belize = "blue",
+                               Dominican_Republic = "blue",
+                               Fiji = "blue",
+                               Haiti = "blue",
+                               'Micronesia_(Federated_States_of)' = "blue",
+                               Puerto_Rico = "blue",
+                               Suriname = "blue",
+                               'Timor-Leste' = "blue",
+                               Trinidad_and_Tobago = "blue",
+                               United_States_Virgin_Islands = "blue",
+                               Vanuatu = "blue",
+                               Bahamas = "blue",
+                               Barbados = "blue",
+                               Guyana = "blue",
+                               Papua_New_Guinea = "blue",
+                               Curaçao = "blue",
+                              'Guinea-Bissau' = "blue",
+                               New_Caledonia = "blue",
+                               American_Samoa = "blue",
+                               French_Polynesia = "blue",
+                               Guam = "blue",
+                               Northern_Mariana_Islands = "blue"))
+```
+
+
+Goal 7
+
+```{r}
+goal7_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators$proportion_of_population_with_access_to_electricity_by_urban_rural_percent))]
+
+cat(paste(goal7_na_example),sep=",")
+```
+
+
+
+```{r}
+ggplot(data = sdg_indicators_ClustImpute_no_variance, aes(y = rownames(sdg_indicators_ClustImpute_no_variance), 
+                                            x =  proportion_of_population_with_access_to_electricity_by_urban_rural_percent,
+                                            fill = rownames(sdg_indicators_ClustImpute_no_variance))) +
+  geom_col(show.legend = FALSE)  +
+  scale_fill_manual(values = c(American_Samoa = "blue",
                                Montserrat = "blue"))
 ```
 
 
 
 
+
+
+
+
+
+```{r}
+# ggplot() + 
+#   geom_point(data = sdg_indicators_ClustImpute, aes(y = rownames(sdg_indicators_ClustImpute),
+#                                         x = proportion_of_population_with_access_to_electricity_by_urban_rural_percent),
+#              color = "black") + 
+#   theme_minimal()
+# 
+# ggplot() +
+#   geom_point(data = sdg_indicators, aes(y = rownames(sdg_indicators),
+#                                         x = proportion_of_population_with_access_to_electricity_by_urban_rural_percent),
+#              color = "black") +
+#   theme_minimal()
+```
 
 
 Random Forest

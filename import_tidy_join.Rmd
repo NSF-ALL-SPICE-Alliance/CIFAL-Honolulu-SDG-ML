@@ -39,6 +39,8 @@ goal1$Value[is.nan(goal1$Value)]<-NA
 ```
 
 
+
+
 ```{r}
 goal1$GeoAreaName <- gsub(" ", "_", goal1$GeoAreaName)
 
@@ -61,6 +63,12 @@ goal1_wider <- goal1_tidy_grouped %>%
               values_from = MedianValue)
 ```
 
+
+
+```{r}
+goal1_wider <- goal1_wider %>% 
+  clean_names()
+```
 
 Goal 2
 
@@ -106,7 +114,15 @@ goal2_wider <- goal2_wider  %>%
 
 
 ```{r}
-goals_1_2_joined <- full_join(goal1_wider, goal2_wider, by = "GeoAreaName")
+goal2_wider <- goal2_wider %>% 
+  clean_names()
+```
+
+
+
+
+```{r}
+goals_1_2_joined <- full_join(goal1_wider, goal2_wider, by = "geo_area_name")
 ```
 
 Goal 3 
@@ -152,8 +168,16 @@ goal3_wider <- goal3_tidy_grouped %>%
 ```
 
 
+
 ```{r}
-goals_1_2_3_joined <- full_join(goals_1_2_joined, goal3_wider, by = "GeoAreaName")
+goal3_wider <- goal3_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+goals_1_2_3_joined <- full_join(goals_1_2_joined, goal3_wider, by = "geo_area_name")
 ```
 
 
@@ -204,8 +228,16 @@ goal4_wider <- goal4_wider %>%
 ```
 
 
+
 ```{r}
-goals_1_2_3_4_joined <- full_join(goals_1_2_3_joined, goal4_wider, by = "GeoAreaName")
+goal4_wider <- goal4_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+goals_1_2_3_4_joined <- full_join(goals_1_2_3_joined, goal4_wider, by = "geo_area_name")
 ```
 
 
@@ -255,7 +287,14 @@ goal5_wider <- goal5_wider %>%
 
 
 ```{r}
-goals_1_2_3_4_5_joined <- full_join(goals_1_2_3_4_joined, goal5_wider, by = "GeoAreaName")
+goal5_wider <- goal5_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+goals_1_2_3_4_5_joined <- full_join(goals_1_2_3_4_joined, goal5_wider, by = "geo_area_name")
 ```
 
 
@@ -305,8 +344,15 @@ goal6_wider <- goal6_wider %>%
 ```
 
 
+
 ```{r}
-goals_1_2_3_4_5_6_joined <- full_join(goals_1_2_3_4_5_joined, goal6_wider, by = "GeoAreaName")
+goal6_wider <- goal6_wider %>% 
+  clean_names()
+```
+
+
+```{r}
+goals_1_2_3_4_5_6_joined <- full_join(goals_1_2_3_4_5_joined, goal6_wider, by = "geo_area_name")
 ```
 
 
@@ -357,8 +403,15 @@ goal7_wider <- goal7_wider %>%
 ```
 
 
+
 ```{r}
-goals_1_2_3_4_5_6_7_joined <- full_join(goals_1_2_3_4_5_6_joined, goal7_wider, by = "GeoAreaName")
+goal7_wider <- goal7_wider %>% 
+  clean_names()
+```
+
+
+```{r}
+goals_1_2_3_4_5_6_7_joined <- full_join(goals_1_2_3_4_5_6_joined, goal7_wider, by = "geo_area_name")
 ```
 
 
@@ -404,8 +457,16 @@ goal8_wider <- goal8_tidy_grouped %>%
 ```
 
 
+
 ```{r}
-goals_1_2_3_4_5_6_7_8_joined <- full_join(goals_1_2_3_4_5_6_7_joined, goal8_wider, by = "GeoAreaName")
+goal8_wider <- goal8_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+goals_1_2_3_4_5_6_7_8_joined <- full_join(goals_1_2_3_4_5_6_7_joined, goal8_wider, by = "geo_area_name")
 ```
 
 
@@ -456,8 +517,15 @@ goal9_wider <- goal9_wider %>%
 ```
 
 
+
 ```{r}
-goals_1_2_3_4_5_6_7_8_9_joined <- full_join(goals_1_2_3_4_5_6_7_8_joined, goal9_wider, by = "GeoAreaName")
+goal9_wider <- goal9_wider %>% 
+  clean_names()
+```
+
+
+```{r}
+goals_1_2_3_4_5_6_7_8_9_joined <- full_join(goals_1_2_3_4_5_6_7_8_joined, goal9_wider, by = "geo_area_name")
 ```
 
 
@@ -504,8 +572,16 @@ goal10_wider <- goal10_wider %>%
 ```
 
 
+
 ```{r}
-goals_1_2_3_4_5_6_7_8_9_10_joined <- full_join(goals_1_2_3_4_5_6_7_8_9_joined, goal10_wider, by = "GeoAreaName")
+goal10_wider <- goal10_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+goals_1_2_3_4_5_6_7_8_9_10_joined <- full_join(goals_1_2_3_4_5_6_7_8_9_joined, goal10_wider, by = "geo_area_name")
 ```
 
 Removing NA's
@@ -515,7 +591,7 @@ sdg_1_10 <- goals_1_2_3_4_5_6_7_8_9_10_joined
 
 sdg_1_10 <- sdg_1_10 %>%
   filter(#GeoAreaName != "Singapore",
-         GeoAreaName != "Small_island_developing_States_(SIDS)")
+         geo_area_name != "Small_island_developing_States_(SIDS)")
 ```
 
 
@@ -524,80 +600,7 @@ sdg_1_10_less_na <- sdg_1_10[, which(colMeans(!is.na(sdg_1_10)) > 0.1)]
 ```
 
 
-ClustImpute
 
-```{r}
-# sdg_1_10_less_na <- sdg_1_10_less_na %>% 
-#   remove_rownames %>% 
-#   column_to_rownames(var="GeoAreaName")
-
-
-
-```
-
-
-```{r}
- 
-#nums <- unlist(lapply(sdg_1_10, is.numeric), use.names = FALSE)
-```
-
-
-```{r}
-#res <- ClustImpute(sdg_1_10_less_na, nr_cluster = 3)
-```
-
-
-```{r}
-# res_centroids <- res$centroids
-# 
-# res_complete_data <- scale(res$complete_data)
-# 
-# 
-
-```
-
-```{r}
-#fviz_nbclust(res_complete_data, kmeans, method = "wss")
-```
-
-
-```{r}
-# set.seed(123)
-# kmeans2 <- kmeans(res_complete_data, center = 6, nstart = 100)
-```
-
-
-
-
-
-```{r}
-#fviz_cluster(kmeans2, data = res_complete_data)
-```
-
-```{r}
-# # from https://www.datanovia.com/en/blog/k-means-clustering-visualization-in-r-step-by-step-guide/#:~:text=The%20function%20fviz_cluster()%20%5Bfactoextra,variables%20is%20greater%20than%202.
-# 
-# # Dimension reduction using PCA
-# res.pca <- prcomp(res_complete_data[, -5],  scale = TRUE)
-# # Coordinates of individuals
-# ind.coord <- as.data.frame(get_pca_ind(res.pca)$coord)
-# # Add clusters obtained using the K-means algorithm
-# ind.coord$cluster <- factor(res$cluster)
-# # # Add Species groups from the original data sett
-# # ind.coord$Species <- df$Species
-# # Data inspection
-# head(ind.coord)
-```
-
-```{r}
-# eigenvalue <- round(get_eigenvalue(res.pca), 1)
-# variance.percent <- eigenvalue$variance.percent
-# head(eigenvalue)
-```
-
-
-
-Back to Joining 
 
 Goal 11
 
@@ -643,8 +646,17 @@ goal11_wider <- goal11_wider %>%
     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
+
 ```{r}
-sdg_1_11_joined <- full_join(sdg_1_10, goal11_wider, by = "GeoAreaName")
+goal11_wider <- goal11_wider %>% 
+  clean_names()
+```
+
+
+
+
+```{r}
+sdg_1_11_joined <- full_join(sdg_1_10, goal11_wider, by = "geo_area_name")
 ```
 
 
@@ -693,8 +705,18 @@ goal12_wider <- goal12_wider %>%
            GeoAreaName != "Small_island_developing_States_(SIDS)")
 ```
 
+
+
 ```{r}
-sdg_1_12_joined <- full_join(sdg_1_11_joined, goal12_wider, by = "GeoAreaName" )
+goal12_wider <- goal12_wider %>% 
+  clean_names()
+```
+
+
+
+
+```{r}
+sdg_1_12_joined <- full_join(sdg_1_11_joined, goal12_wider, by = "geo_area_name" )
 ```
 
 
@@ -745,8 +767,17 @@ goal13_wider <- goal13_wider %>%
            GeoAreaName != "Small_island_developing_States_(SIDS)")
 ```
 
+
+
 ```{r}
-sdg_1_13_joined <- full_join(sdg_1_12_joined, goal13_wider, by = "GeoAreaName")
+goal13_wider <- goal13_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+sdg_1_13_joined <- full_join(sdg_1_12_joined, goal13_wider, by = "geo_area_name")
 ```
 
 
@@ -795,8 +826,17 @@ goal14_wider <- goal14_wider %>%
            GeoAreaName != "Small_island_developing_States_(SIDS)")
 ```
 
+
+
 ```{r}
-sdg_1_14_joined <- full_join(sdg_1_13_joined, goal14_wider, by = "GeoAreaName")
+goal14_wider <- goal14_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+sdg_1_14_joined <- full_join(sdg_1_13_joined, goal14_wider, by = "geo_area_name")
 ```
 
 
@@ -848,8 +888,18 @@ goal15_wider <- goal15_wider %>%
            GeoAreaName != "Small_island_developing_States_(SIDS)")
 ```
 
+
+
 ```{r}
-sdg_1_15_joined <- full_join(sdg_1_14_joined, goal15_wider, by = "GeoAreaName")
+goal15_wider <- goal15_wider %>% 
+  clean_names()
+```
+
+
+
+
+```{r}
+sdg_1_15_joined <- full_join(sdg_1_14_joined, goal15_wider, by = "geo_area_name")
 ```
 
 
@@ -897,8 +947,18 @@ goal16_wider <- goal16_wider %>%
            GeoAreaName != "Small_island_developing_States_(SIDS)")
 ```
 
+
+
 ```{r}
-sdg_1_16_joined <- full_join(sdg_1_15_joined, goal16_wider, by = "GeoAreaName")
+goal16_wider <- goal16_wider %>% 
+  clean_names()
+```
+
+
+
+
+```{r}
+sdg_1_16_joined <- full_join(sdg_1_15_joined, goal16_wider, by = "geo_area_name")
 ```
 
 
@@ -940,6 +1000,8 @@ goal17_tidy_grouped <- goal17 %>%
 ```
 
 
+
+
 ```{r}
 goal17_wider <- goal17_tidy_grouped %>% 
   pivot_wider(names_from = SeriesDescription,
@@ -950,11 +1012,22 @@ goal17_wider <- goal17_wider %>%
            GeoAreaName != "Small_island_developing_States_(SIDS)")
 ```
 
+
+
+
 ```{r}
-sdg_1_17_joined <- full_join(sdg_1_16_joined, goal17_wider, by = "GeoAreaName") 
+goal17_wider <- goal17_wider %>% 
+  clean_names()
+```
+
+```{r}
+sdg_1_17_joined <- full_join(sdg_1_16_joined, goal17_wider, by = "geo_area_name") 
 ```
 
 ***Check for duplicates
+
+
+
 
 ```{r}
 sdg_1_17_joined_duplicate_check <- sdg_1_17_joined[!duplicated(as.list(sdg_1_17_joined))]
