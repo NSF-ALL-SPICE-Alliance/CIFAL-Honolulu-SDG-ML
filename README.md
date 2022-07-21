@@ -1,8 +1,8 @@
 # Utilization of Machine Learning to Impute and Better Understand Data on Small Island Developing States (SIDS)
 
-<img src="/Users/connorflynn/Downloads/cuh_logo.png" align="right" width="120" />
 
 
+# chaminade <img src="visualizations/cuh_logo.png" align="right" width="120" />
 
 
 
