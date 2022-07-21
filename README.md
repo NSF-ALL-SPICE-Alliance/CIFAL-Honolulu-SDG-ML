@@ -2,13 +2,11 @@
 
 
 
-# chaminade <img src="visualizations/cuh_logo.png" align="right" width="120" />
+<img src="visualizations/cuh_logo.png" width="120" /> <img src="visualizations/cifal_logo.png" width="210" />
 
 
 
 
-
-## Chaminade University of Honolulu & The United Nations CIFAL Center 
 
 ### Data
 
