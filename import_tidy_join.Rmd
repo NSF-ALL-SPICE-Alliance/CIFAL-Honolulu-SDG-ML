@@ -5,42 +5,75 @@ date: "6/30/2022"
 output: html_document
 ---
 
+Goal: The goal of this Rmd is to end up with a data frame that has one SIDS per row and one sustainable development goal indicator (ex: proportion of population living below the international poverty line) per column. The last step in this Rmd is to create a csv of the clean data frame to be used in further analysis.  
+
+
+
+## Load Libraries
+
+The code chunk below reads in packages and functions used in this workflow:
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
-library(here)
-library(readxl)
-library(xlsx)
-library(ClustImpute)
-library(tidyverse)
-library(cluster)
-library(factoextra)
-library(gridExtra)
+
+#load libraries
+if (!require(librarian)){
+  install.packages("librarian")
+  library(librarian)
+}
+
+librarian::shelf(tidyverse,
+                here,
+                janitor)
+
 options(scipen = 99)
 ```
 
-Goal 1
-
 
 Import data
+
+Each sustainable development goal (sdg) has it's own csv in the 'data' folder. 
+
+Below, we:
+  - Import each csv (1 at a time, 17 total)
+  - Clean each csv
+  - Join each csv, building to the final csv, one goal at a time
+
+
+Goal 1
 ```{r}
 goal1 <- read_csv(here("data/sdg_data/Goal1.csv"))
 
 ```
+ 
+ 
+This is all the indicator data for Sustainable Development Goal 1 for SIDS.
 
-Convert Value Column to class numeric
+When we first import the data, we can see:
+  - There are multiple observations for one country and the same indicator. 
+      - This is to account for differences in data by year, age, sex, and geographic context for the same country.
+      - This is a great idea, *however*, an extremely significant amount of the data is NA with this specific scope. 
+  - We want a broad picture of sustainable development goal measures for SIDS with as little NA values as possible, so:
+      - We we summarize the data by taking the median value of age, sex, year, and urban vs rural geography. 
+      - This allows us to have as little NA values as possible, although the number of NA's is still significant, and keep the data frame to one SIDS per row and one         sdg indicator per column.
+      
+Let's start cleaning:
+
+Convert Value Column to class numeric in order to perform the median() function on the Value Column
 ```{r}
 goal1 <- goal1 %>% 
   mutate(Value = as.numeric(Value))
 ```
+
+
+The data has both NA and nan values so convert all missing data to NA
 
 ```{r}
 goal1$Value[is.nan(goal1$Value)]<-NA
 ```
 
 
-
-
+Eliminate Spaces from SIDS Names and Series Descriptions (indicators)
 ```{r}
 goal1$GeoAreaName <- gsub(" ", "_", goal1$GeoAreaName)
 
@@ -70,6 +103,11 @@ goal1_wider <- goal1_wider %>%
   clean_names()
 ```
 
+
+The steps above are repeated 16 times to result in 1 data frame with all indicators for all 17 SDG's
+
+
+
 Goal 2
 
 
@@ -79,11 +117,20 @@ goal2 <- read_csv(here("data/sdg_data/Goal2.csv"))
 
 ```
 
+```{r}
+unique(goal2$SeriesDescription)
+```
+
+
+
+
 Convert Value Column to class numeric
 ```{r}
 goal2 <- goal2 %>% 
   mutate(Value = as.numeric(Value))
 ```
+
+
 ```{r}
 goal2$Value[is.nan(goal2$Value)]<-NA
 ```
