@@ -1,0 +1,157 @@
+---
+title: "goal2_clean_summarise"
+author: "Connor Flynn"
+date: "7/21/2022"
+output: html_document
+---
+
+Goal: The goal of this Rmd is to clean and summarize the data on Sustainable Development Goal 2.
+
+
+## Load Libraries
+
+The code chunk below reads in packages and functions used in this workflow:
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#load libraries
+if (!require(librarian)){
+  install.packages("librarian")
+  library(librarian)
+}
+
+librarian::shelf(tidyverse,
+                here,
+                janitor,
+                dplyr)
+
+options(scipen = 99)
+```
+
+
+Import data
+
+Each sustainable development goal (sdg) has it's own csv in the 'data' folder. 
+
+
+Goal 2
+```{r}
+goal2 <- read_csv(here("data/sdg_data/Goal2.csv"))
+
+```
+
+This is all the indicator data for Sustainable Development Goal 2 for SIDS.
+
+When we first import the data, we can see:
+  - There are multiple observations for one country and the same indicator. 
+      - This is to account for differences in data by year, age, sex, and geographic context for the same country.
+      - This is a great idea, *however*, an extremely significant amount of the data is NA with this specific scope. 
+  - We want the most recent picture of sustainable development goal measures for SIDS with as little NA values as possible, so:
+      - We we summarize the data by taking the most recent year of data available for each SIDS and the mean value of age, sex, and urban vs rural geography for that year. 
+      - This allows us to
+        - Have as recent of a dataset as possible with as little NA values as possible, although the number of NA's is still significant
+        - Keep the data frame to one SIDS per row and one sdg indicator per column.
+      
+Let's start cleaning:
+
+
+
+Convert Value Column to class numeric in order to perform functions on the Value Column
+```{r}
+goal2 <- goal2 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+The data has both NA and nan values so convert all missing data to NA
+
+```{r}
+goal2 <- goal2 %>% 
+  mutate_all(~ifelse(is.nan(.), NA, .))
+
+```
+
+
+Drop NA values
+```{r}
+goal2 <- goal2 %>% 
+  drop_na(Value)
+```
+
+
+
+Eliminate Spaces from SIDS Names and Series Descriptions (indicators)
+```{r}
+goal2$GeoAreaName <- gsub(" ", "_", goal2$GeoAreaName)
+
+goal2$SeriesDescription <- gsub(" ", "_", goal2$SeriesDescription)
+```
+
+
+Look at Series Descriptions
+```{r}
+unique(goal2$SeriesDescription)
+```
+
+Group in order to get mean value from multiple categories of data for the same year
+```{r}
+
+goal2_tidy_grouped <- goal2 %>% 
+  group_by(SeriesDescription, GeoAreaName, TimePeriod) %>% 
+  summarise(Value = mean(Value, na.rm = TRUE))
+```
+
+Select the data point with the most recent year for each SIDS and Indicator
+```{r}
+goal2_tidy_grouped_most_recent <- goal2_tidy_grouped %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  slice(which.max(TimePeriod))
+```
+
+Drop time period to pivot_wider in next step
+```{r}
+goal2_tidy_grouped_most_recent_no_time <- goal2_tidy_grouped_most_recent %>% 
+  select(!TimePeriod)
+```
+
+Pivot data to get one SIDS per row and one indicator per column
+```{r}
+goal2_wider <- goal2_tidy_grouped_most_recent_no_time %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = Value)
+```
+
+
+Clean column names with the janitor package
+```{r}
+goal2_wider  <- goal2_wider  %>% 
+  clean_names()
+
+```
+
+
+
+Write into a csv file to the most_recent_data folder
+
+```{r}
+write_csv(goal2_wider, here("./most_recent/data_cleaned_and_summarized/goal2_most_recent.csv"))
+```
+
+
+Plot most recent data 
+
+```{r}
+most_recent_data <- table(goal2_tidy_grouped_most_recent['TimePeriod'])
+
+most_recent_data <- as.data.frame(most_recent_data)
+```
+
+
+```{r}
+ggplot(data = most_recent_data, aes(x = Var1, y = Freq)) +
+  geom_col()
+```
+
+
+

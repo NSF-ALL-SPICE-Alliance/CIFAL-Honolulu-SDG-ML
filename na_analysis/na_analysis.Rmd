@@ -1,0 +1,53 @@
+---
+title: "NA Analysis"
+author: "Connor Flynn"
+date: "7/12/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(missCompare)
+```
+
+```{r}
+sdg_indicators <- read_csv(here("data/sdg_data/sdg_indicators.csv"))
+```
+
+
+```{r}
+sdg_indicators <- sdg_indicators %>% 
+  remove_rownames %>% 
+  column_to_rownames(var="GeoAreaName")
+```
+
+```{r}
+df <- clean(sdg_indicators)
+```
+
+```{r}
+metadata <- get_data(df, 
+         matrixplot_sort = T,
+         plot_transform = T)
+```
+
+```{r}
+missCompare::impute_simulated(rownum = metadata$Rows,
+                              colnum = metadata$Columns, 
+                              cormat = metadata$Corr_matrix,
+                              MD_pattern = metadata$MD_Pattern,
+                              NA_fraction = metadata$Fraction_missingness,
+                              min_PDM = 10,
+                              n.iter = 50, 
+                              assumed_pattern = NA)
+```
+
+```{r}
+imputed <- impute_data(sdg_indicators, 
+                         scale = T, 
+                         n.iter = 10, 
+                         sel_method = c(1:16))
+```
+

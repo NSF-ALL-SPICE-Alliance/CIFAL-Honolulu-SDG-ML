@@ -1,0 +1,1095 @@
+---
+title: "import_tidy_join"
+author: "Connor Flynn"
+date: "6/30/2022"
+output: html_document
+---
+
+Goal: The goal of this Rmd is to end up with a data frame that has one SIDS per row and one sustainable development goal indicator (ex: proportion of population living below the international poverty line) per column. The last step in this Rmd is to create a csv of the clean data frame to be used in further analysis.  
+
+
+
+## Load Libraries
+
+The code chunk below reads in packages and functions used in this workflow:
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#load libraries
+if (!require(librarian)){
+  install.packages("librarian")
+  library(librarian)
+}
+
+librarian::shelf(tidyverse,
+                here,
+                janitor)
+
+options(scipen = 99)
+```
+
+
+Import data
+
+Each sustainable development goal (sdg) has it's own csv in the 'data' folder. 
+
+Below, we:
+  - Import each csv (1 at a time, 17 total)
+  - Clean each csv
+  - Join each csv, building to the final csv, one goal at a time
+
+
+Goal 1
+```{r}
+goal1 <- read_csv(here("data/sdg_data/Goal1.csv"))
+
+```
+ 
+ 
+This is all the indicator data for Sustainable Development Goal 1 for SIDS.
+
+When we first import the data, we can see:
+  - There are multiple observations for one country and the same indicator. 
+      - This is to account for differences in data by year, age, sex, and geographic context for the same country.
+      - This is a great idea, *however*, an extremely significant amount of the data is NA with this specific scope. 
+  - We want a broad picture of sustainable development goal measures for SIDS with as little NA values as possible, so:
+      - We we summarize the data by taking the median value of age, sex, year, and urban vs rural geography. 
+      - This allows us to have as little NA values as possible, although the number of NA's is still significant, and keep the data frame to one SIDS per row and one         sdg indicator per column.
+      
+Let's start cleaning:
+
+Convert Value Column to class numeric in order to perform the median() function on the Value Column
+```{r}
+goal1 <- goal1 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+The data has both NA and nan values so convert all missing data to NA
+
+```{r}
+goal1$Value[is.nan(goal1$Value)]<-NA
+```
+
+
+Eliminate Spaces from SIDS Names and Series Descriptions (indicators)
+```{r}
+goal1$GeoAreaName <- gsub(" ", "_", goal1$GeoAreaName)
+
+goal1$SeriesDescription <- gsub(" ", "_", goal1$SeriesDescription)
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal1_tidy_grouped <- goal1 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal1_wider <- goal1_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+```
+
+
+
+```{r}
+goal1_wider <- goal1_wider %>% 
+  clean_names()
+```
+
+
+The steps above are repeated 16 times to result in 1 data frame with all indicators for all 17 SDG's
+
+
+
+Goal 2
+
+
+Import data
+```{r}
+goal2 <- read_csv(here("data/sdg_data/Goal2.csv"))
+
+```
+
+```{r}
+unique(goal2$SeriesDescription)
+```
+
+
+
+
+Convert Value Column to class numeric
+```{r}
+goal2 <- goal2 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+```{r}
+goal2$Value[is.nan(goal2$Value)]<-NA
+```
+
+
+```{r}
+goal2$GeoAreaName <- gsub(" ", "_", goal2$GeoAreaName)
+
+goal2$SeriesDescription <- gsub(" ", "_", goal2$SeriesDescription)
+```
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+goal2_tidy_grouped <- goal2 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal2_wider <- goal2_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal2_wider <- goal2_wider  %>% 
+  filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+```
+
+
+```{r}
+goal2_wider <- goal2_wider %>% 
+  clean_names()
+```
+
+
+
+
+```{r}
+goals_1_2_joined <- full_join(goal1_wider, goal2_wider, by = "geo_area_name")
+```
+
+Goal 3 
+
+Import data
+```{r}
+goal3 <- read_csv(here("data/sdg_data/Goal3.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal3 <- goal3 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+```{r}
+goal3$Value[is.nan(goal3$Value)]<-NA
+```
+
+
+```{r}
+goal3$GeoAreaName <- gsub(" ", "_", goal3$GeoAreaName)
+
+goal3$SeriesDescription <- gsub(" ", "_", goal3$SeriesDescription)
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal3_tidy_grouped <- goal3 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal3_wider <- goal3_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+```
+
+
+
+```{r}
+goal3_wider <- goal3_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+goals_1_2_3_joined <- full_join(goals_1_2_joined, goal3_wider, by = "geo_area_name")
+```
+
+
+Goal 4
+
+Import data
+```{r}
+goal4 <- read_csv(here("data/sdg_data/Goal4.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal4 <- goal4 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+```{r}
+goal4$Value[is.nan(goal4$Value)]<-NA
+```
+
+
+```{r}
+goal4$GeoAreaName <- gsub(" ", "_", goal4$GeoAreaName)
+
+goal4$SeriesDescription <- gsub(" ", "_", goal4$SeriesDescription)
+```
+
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal4_tidy_grouped <- goal4 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal4_wider <- goal4_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue) 
+
+goal4_wider <- goal4_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+```
+
+
+
+```{r}
+goal4_wider <- goal4_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+goals_1_2_3_4_joined <- full_join(goals_1_2_3_joined, goal4_wider, by = "geo_area_name")
+```
+
+
+Goal 5
+
+Import data
+```{r}
+goal5 <- read_csv(here("data/sdg_data/Goal5.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal5 <- goal5 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+```{r}
+goal5$Value[is.nan(goal5$Value)]<-NA
+```
+
+```{r}
+goal5$GeoAreaName <- gsub(" ", "_", goal5$GeoAreaName)
+
+goal5$SeriesDescription <- gsub(" ", "_", goal5$SeriesDescription)
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal5_tidy_grouped <- goal5 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal5_wider <- goal5_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal5_wider <- goal5_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+```
+
+
+```{r}
+goal5_wider <- goal5_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+goals_1_2_3_4_5_joined <- full_join(goals_1_2_3_4_joined, goal5_wider, by = "geo_area_name")
+```
+
+
+Goal 6
+
+Import data
+```{r}
+goal6 <- read_csv(here("data/sdg_data/Goal6.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal6 <- goal6 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+```{r}
+goal6$Value[is.nan(goal6$Value)]<-NA
+```
+
+
+
+```{r}
+goal6$GeoAreaName <- gsub(" ", "_", goal6$GeoAreaName)
+
+goal6$SeriesDescription <- gsub(" ", "_", goal6$SeriesDescription)
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal6_tidy_grouped <- goal6 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal6_wider <- goal6_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal6_wider <- goal6_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+```
+
+
+
+```{r}
+goal6_wider <- goal6_wider %>% 
+  clean_names()
+```
+
+
+```{r}
+goals_1_2_3_4_5_6_joined <- full_join(goals_1_2_3_4_5_joined, goal6_wider, by = "geo_area_name")
+```
+
+
+Goal 7
+
+Import data
+```{r}
+goal7 <- read_csv(here("data/sdg_data/Goal7.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal7 <- goal7 %>% 
+  mutate(Value = as.numeric(Value))
+
+```
+
+
+```{r}
+goal7$Value[is.nan(goal7$Value)]<-NA
+```
+
+
+```{r}
+goal7$GeoAreaName <- gsub(" ", "_", goal7$GeoAreaName)
+
+goal7$SeriesDescription <- gsub(" ", "_", goal7$SeriesDescription)
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal7_tidy_grouped <- goal7 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal7_wider <- goal7_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal7_wider <- goal7_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+```
+
+
+
+```{r}
+goal7_wider <- goal7_wider %>% 
+  clean_names()
+```
+
+
+```{r}
+goals_1_2_3_4_5_6_7_joined <- full_join(goals_1_2_3_4_5_6_joined, goal7_wider, by = "geo_area_name")
+```
+
+
+Goal 8 
+
+Import data
+```{r}
+goal8 <- read_csv(here("data/sdg_data/Goal8.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal8 <- goal8 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+```{r}
+goal8$Value[is.nan(goal8$Value)]<-NA
+```
+
+
+```{r}
+goal8$GeoAreaName <- gsub(" ", "_", goal8$GeoAreaName)
+
+goal8$SeriesDescription <- gsub(" ", "_", goal8$SeriesDescription)
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal8_tidy_grouped <- goal8 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal8_wider <- goal8_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+```
+
+
+
+```{r}
+goal8_wider <- goal8_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+goals_1_2_3_4_5_6_7_8_joined <- full_join(goals_1_2_3_4_5_6_7_joined, goal8_wider, by = "geo_area_name")
+```
+
+
+
+Goal 9
+
+Import data
+```{r}
+goal9 <- read_csv(here("data/sdg_data/Goal9.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal9 <- goal9 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+```{r}
+goal9$Value[is.nan(goal9$Value)]<-NA
+```
+
+
+```{r}
+goal9$GeoAreaName <- gsub(" ", "_", goal9$GeoAreaName)
+
+goal9$SeriesDescription <- gsub(" ", "_", goal9$SeriesDescription)
+```
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal9_tidy_grouped <- goal9 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+
+
+```{r}
+goal9_wider <- goal9_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal9_wider <- goal9_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+```
+
+
+
+```{r}
+goal9_wider <- goal9_wider %>% 
+  clean_names()
+```
+
+
+```{r}
+goals_1_2_3_4_5_6_7_8_9_joined <- full_join(goals_1_2_3_4_5_6_7_8_joined, goal9_wider, by = "geo_area_name")
+```
+
+
+Goal 10
+
+Import data
+```{r}
+goal10 <- read_csv(here("data/sdg_data/Goal10.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal10 <- goal10 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+```{r}
+goal10$Value[is.nan(goal10$Value)]<-NA
+```
+
+```{r}
+goal10$GeoAreaName <- gsub(" ", "_", goal10$GeoAreaName)
+
+goal10$SeriesDescription <- gsub(" ", "_", goal10$SeriesDescription)
+```
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal10_tidy_grouped <- goal10 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal10_wider <- goal10_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal10_wider <- goal10_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+```
+
+
+
+```{r}
+goal10_wider <- goal10_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+goals_1_2_3_4_5_6_7_8_9_10_joined <- full_join(goals_1_2_3_4_5_6_7_8_9_joined, goal10_wider, by = "geo_area_name")
+```
+
+Removing NA's
+
+```{r}
+sdg_1_10 <- goals_1_2_3_4_5_6_7_8_9_10_joined
+
+sdg_1_10 <- sdg_1_10 %>%
+  filter(#GeoAreaName != "Singapore",
+         geo_area_name != "Small_island_developing_States_(SIDS)")
+```
+
+
+```{r}
+sdg_1_10_less_na <- sdg_1_10[, which(colMeans(!is.na(sdg_1_10)) > 0.1)]
+```
+
+
+
+
+Goal 11
+
+
+Import data
+```{r}
+goal11 <- read_csv(here("data/sdg_data/Goal11.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal11 <- goal11 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+```{r}
+goal11$Value[is.nan(goal11$Value)]<-NA
+```
+
+```{r}
+goal11$GeoAreaName <- gsub(" ", "_", goal11$GeoAreaName)
+
+goal11$SeriesDescription <- gsub(" ", "_", goal11$SeriesDescription)
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal11_tidy_grouped <- goal11 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal11_wider <- goal11_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal11_wider <- goal11_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+```
+
+
+```{r}
+goal11_wider <- goal11_wider %>% 
+  clean_names()
+```
+
+
+
+
+```{r}
+sdg_1_11_joined <- full_join(sdg_1_10, goal11_wider, by = "geo_area_name")
+```
+
+
+
+Goal 12 
+
+Import data
+```{r}
+goal12 <- read_csv(here("data/sdg_data/Goal12.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal12 <- goal12 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+```{r}
+goal12$Value[is.nan(goal12$Value)]<-NA
+```
+
+
+```{r}
+goal12$GeoAreaName <- gsub(" ", "_", goal12$GeoAreaName)
+
+goal12$SeriesDescription <- gsub(" ", "_", goal12$SeriesDescription)
+```
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal12_tidy_grouped <- goal12 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal12_wider <- goal12_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal12_wider <- goal12_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba",
+           GeoAreaName != "Small_island_developing_States_(SIDS)")
+```
+
+
+
+```{r}
+goal12_wider <- goal12_wider %>% 
+  clean_names()
+```
+
+
+
+
+```{r}
+sdg_1_12_joined <- full_join(sdg_1_11_joined, goal12_wider, by = "geo_area_name" )
+```
+
+
+
+
+Goal 13
+
+Import data
+```{r}
+goal13 <- read_csv(here("data/sdg_data/Goal13.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal13 <- goal13 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+```{r}
+goal13$Value[is.nan(goal13$Value)]<-NA
+```
+
+
+```{r}
+goal13$GeoAreaName <- gsub(" ", "_", goal13$GeoAreaName)
+
+goal13$SeriesDescription <- gsub(" ", "_", goal13$SeriesDescription)
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal13_tidy_grouped <- goal13 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal13_wider <- goal13_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal13_wider <- goal13_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba",
+           GeoAreaName != "Small_island_developing_States_(SIDS)")
+```
+
+
+
+```{r}
+goal13_wider <- goal13_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+sdg_1_13_joined <- full_join(sdg_1_12_joined, goal13_wider, by = "geo_area_name")
+```
+
+
+
+Goal 14
+
+Import data
+```{r}
+goal14 <- read_csv(here("data/sdg_data/Goal14.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal14 <- goal14 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+```{r}
+goal14$Value[is.nan(goal14$Value)]<-NA
+```
+
+```{r}
+goal14$GeoAreaName <- gsub(" ", "_", goal14$GeoAreaName)
+
+goal14$SeriesDescription <- gsub(" ", "_", goal14$SeriesDescription)
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal14_tidy_grouped <- goal14 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal14_wider <- goal14_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal14_wider <- goal14_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba",
+           GeoAreaName != "Small_island_developing_States_(SIDS)")
+```
+
+
+
+```{r}
+goal14_wider <- goal14_wider %>% 
+  clean_names()
+```
+
+
+
+```{r}
+sdg_1_14_joined <- full_join(sdg_1_13_joined, goal14_wider, by = "geo_area_name")
+```
+
+
+
+Goal 15 
+
+Import data
+```{r}
+goal15 <- read_csv(here("data/sdg_data/Goal15.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal15 <- goal15 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+```{r}
+goal15$Value[is.nan(goal15$Value)]<-NA
+```
+
+
+```{r}
+goal15$GeoAreaName <- gsub(" ", "_", goal15$GeoAreaName)
+
+goal15$SeriesDescription <- gsub(" ", "_", goal15$SeriesDescription)
+```
+
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal15_tidy_grouped <- goal15 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal15_wider <- goal15_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal15_wider <- goal15_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba",
+           GeoAreaName != "Small_island_developing_States_(SIDS)")
+```
+
+
+
+```{r}
+goal15_wider <- goal15_wider %>% 
+  clean_names()
+```
+
+
+
+
+```{r}
+sdg_1_15_joined <- full_join(sdg_1_14_joined, goal15_wider, by = "geo_area_name")
+```
+
+
+Goal 16 
+
+Import data
+```{r}
+goal16 <- read_csv(here("data/sdg_data/Goal16.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal16 <- goal16 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+```{r}
+goal16$Value[is.nan(goal16$Value)]<-NA
+```
+
+
+```{r}
+goal16$GeoAreaName <- gsub(" ", "_", goal16$GeoAreaName)
+
+goal16$SeriesDescription <- gsub(" ", "_", goal16$SeriesDescription)
+```
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal16_tidy_grouped <- goal16 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+```{r}
+goal16_wider <- goal16_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal16_wider <- goal16_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba",
+           GeoAreaName != "Small_island_developing_States_(SIDS)")
+```
+
+
+
+```{r}
+goal16_wider <- goal16_wider %>% 
+  clean_names()
+```
+
+
+
+
+```{r}
+sdg_1_16_joined <- full_join(sdg_1_15_joined, goal16_wider, by = "geo_area_name")
+```
+
+
+
+Goal 17 
+
+
+Import data
+```{r}
+goal17 <- read_csv(here("data/sdg_data/Goal17.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal17 <- goal17 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+```{r}
+goal17$Value[is.nan(goal17$Value)]<-NA
+```
+
+
+```{r}
+goal17$GeoAreaName <- gsub(" ", "_", goal17$GeoAreaName)
+
+goal17$SeriesDescription <- gsub(" ", "_", goal17$SeriesDescription)
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal17_tidy_grouped <- goal17 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value, na.rm = TRUE))
+```
+
+
+
+
+```{r}
+goal17_wider <- goal17_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+
+goal17_wider <- goal17_wider %>% 
+    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba",
+           GeoAreaName != "Small_island_developing_States_(SIDS)")
+```
+
+
+
+
+```{r}
+goal17_wider <- goal17_wider %>% 
+  clean_names()
+```
+
+```{r}
+sdg_1_17_joined <- full_join(sdg_1_16_joined, goal17_wider, by = "geo_area_name") 
+```
+
+***Check for duplicates
+
+
+
+
+```{r}
+sdg_1_17_joined_duplicate_check <- sdg_1_17_joined[!duplicated(as.list(sdg_1_17_joined))]
+```
+
+
+
+
+Write CSV
+
+```{r}
+write_csv(sdg_1_17_joined, (here("data/sdg_data/sdg_indicators.csv")))
+```
+
+
+
+
+

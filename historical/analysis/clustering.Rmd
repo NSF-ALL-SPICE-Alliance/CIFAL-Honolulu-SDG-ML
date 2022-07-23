@@ -1,0 +1,286 @@
+---
+title: "Clustering"
+author: "Connor Flynn"
+date: "7/6/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(here)
+library(readxl)
+library(xlsx)
+library(ClustImpute)
+library(tidyverse)
+library(cluster)
+library(factoextra)
+library(gridExtra)
+library(corrplot)
+library(janitor)
+options(scipen = 99)
+options(ggrepel.max.overlaps = Inf)
+```
+
+Read In Data
+
+```{r}
+sdg_indicators <- read_csv(here("data/sdg_data/sdg_indicators.csv"))
+```
+
+Remove Singapore
+
+```{r}
+sdg_indicators <- sdg_indicators %>% 
+  filter(GeoAreaName != "Singapore")
+```
+
+Convert values of first row to row names
+
+```{r}
+sdg_indicators <- sdg_indicators %>% 
+  remove_rownames %>% 
+  column_to_rownames(var="GeoAreaName")
+```
+
+
+
+Only select columns where certain % of rows have values that are not NA
+
+```{r}
+sdg_indicators_less_na <- sdg_indicators[, which(colMeans(!is.na(sdg_indicators)) > 0.45)]
+```
+
+ClustImpute
+
+
+
+run ClustImpute function to receive ClustImpute object
+
+```{r}
+res <- ClustImpute(sdg_indicators_less_na, nr_cluster = 3)
+```
+
+within ClustImpute object, scale the imputed data
+
+```{r}
+res_complete_data <- res$complete_data
+# res_complete_data_scaled <- scale(res$complete_data)
+```
+
+Remove columns with 0 variance
+
+```{r}
+res_complete_data_no_variance <- res_complete_data[, sapply(res_complete_data, var) != 0]
+```
+
+create visualization to decide appropriate \# of clusters for kmeans function
+
+```{r}
+fviz_nbclust(res_complete_data_no_variance, kmeans, method = "wss")
+```
+
+```{r}
+set.seed(123)
+kmeans2 <- kmeans(res_complete_data_no_variance, center = 3, nstart = 100)
+```
+
+```{r}
+fviz_cluster(kmeans2, data = res_complete_data_no_variance,
+geom = c("text","point"),
+             repel = TRUE,            # Avoid label overlapping
+             show.clust.cent = TRUE, # Show cluster centers
+             palette = "lancet",         # Color palette see ?ggpubr::ggpar
+             ggtheme = theme_bw()+
+              theme(axis.text.x = element_text( hjust = 0.5, vjust = 0.5, size=15),
+        axis.title.x =element_text(size=20),
+        axis.text.y = element_text(hjust = 0.5, vjust = 0.5, size=15),
+        axis.title.y =element_text(size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        strip.text = element_text(size=25)))
+```
+
+```{r}
+sil <- silhouette(kmeans2$cluster, dist(res_complete_data_no_variance))
+fviz_silhouette(sil)
+```
+
+
+Cluster Goal 1
+
+
+```{r}
+goal1 <- read_csv(here("data/sdg_data/Goal1.csv"))
+
+```
+
+Convert Value Column to class numeric
+```{r}
+goal1 <- goal1 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+Group in order to get median value form multiple years/categories of data
+```{r}
+
+goal1_tidy_grouped <- goal1 %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  summarise(MedianValue = median(Value))
+```
+
+
+```{r}
+goal1_wider <- goal1_tidy_grouped %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = MedianValue)
+```
+
+
+```{r}
+goal1_wider <- goal1_wider %>% 
+  filter(GeoAreaName != "Cuba",
+         GeoAreaName != "Singapore")
+```
+
+
+
+
+```{r}
+goal1_wider <- goal1_wider %>% 
+  remove_rownames %>% 
+  column_to_rownames(var="GeoAreaName")
+```
+
+
+```{r}
+goal1_less_na <- goal1_wider[, which(colMeans(!is.na(goal1_wider)) > 0.45)]
+```
+
+
+```{r}
+res1 <- ClustImpute(goal1_less_na, nr_cluster = 3)
+```
+
+```{r}
+res1_complete_data <- res1$complete_data
+```
+
+```{r}
+fviz_nbclust(res1_complete_data, kmeans, method = "wss")
+```
+
+```{r}
+set.seed(123)
+kmeans1 <- kmeans(res1_complete_data, center = 4, nstart = 100)
+```
+
+
+```{r}
+fviz_cluster(kmeans1, data = res1_complete_data)
+```
+
+
+Bar 
+
+```{r}
+goal1_wider_clean <- clean_names(goal1_wider)
+```
+
+```{r}
+ggplot(data = goal1_wider_clean, aes(y = rownames(goal1_wider_clean), x =  proportion_of_population_below_international_poverty_line_percent)) +
+  geom_col()
+```
+```{r}
+res1_complete_data_clean <- clean_names(res1_complete_data)
+```
+
+
+```{r}
+write_csv(res_complete_data, here("data/sdg_data/clust_impute_all_indicators"))
+```
+
+
+
+```{r}
+ggplot(data = res1_complete_data_clean, aes(y = rownames(res1_complete_data_clean), 
+                                            x =  proportion_of_population_below_international_poverty_line_percent,
+                                            fill = rownames(res1_complete_data_clean))) +
+  geom_col(show.legend = FALSE) + 
+  scale_fill_manual(values = c(Anguilla                         = "blue",  
+                               Belize                     = "blue",
+                               "Cook Islands"                     = "blue",       
+                               Palau = "blue",
+                               "Puerto Rico"                      = "blue",   
+                               Suriname              = "blue",
+                              " Trinidad and Tobago"     = "blue",
+                               "United States Virgin Islands" = "blue",
+                               Aruba                          = "blue",
+                               Bahamas                         = "blue",
+                               Barbados           = "blue",
+                               "British Virgin Islands" = "blue",
+                               Dominica                         = "blue", 
+                               Grenada                          = "blue", 
+                               Guyana = "blue",
+                               "Saint Vincent and the Grenadines"= "blue",
+                               "Antigua and Barbuda"            = "blue",
+                               "Saint Kitts and Nevis"            = "blue",              
+                               Curaçao                    = "blue",
+                              " New Caledonia" = "blue",
+                               "Sint Maarten (Dutch part) "       = "blue",           
+                               "American Samoa"                 = "blue",
+                               "French Polynesia"                 = "blue",            
+                               Guam = "blue",
+                               Niue         = "blue",
+                               "Northern Mariana Islands"         = "blue",              
+                               Montserrat = "blue"))
+```
+```{r}
+goal1_wider_clean_na <- goal1_wider_clean %>% 
+  filter(is.na(proportion_of_population_below_international_poverty_line_percent))
+```
+
+
+
+```{r}
+res_complete_data_clean <- clean_names(res_complete_data)
+```
+
+```{r}
+ggplot(data = res_complete_data_clean, aes(y = rownames(res_complete_data_clean), 
+                                            x =  proportion_of_population_below_international_poverty_line_percent,
+                                            fill = rownames(res_complete_data_clean))) +
+  geom_col(show.legend = FALSE) + 
+  scale_fill_manual(values = c(Anguilla                         = "blue",  
+                               Belize                     = "blue",
+                               "Cook Islands"                     = "blue",       
+                               Palau = "blue",
+                               "Puerto Rico"                      = "blue",   
+                               Suriname              = "blue",
+                              " Trinidad and Tobago"     = "blue",
+                               "United States Virgin Islands" = "blue",
+                               Aruba                          = "blue",
+                               Bahamas                         = "blue",
+                               Barbados           = "blue",
+                               "British Virgin Islands" = "blue",
+                               Dominica                         = "blue", 
+                               Grenada                          = "blue", 
+                               Guyana = "blue",
+                               "Saint Vincent and the Grenadines"= "blue",
+                               "Antigua and Barbuda"            = "blue",
+                               "Saint Kitts and Nevis"            = "blue",              
+                               Curaçao                    = "blue",
+                              " New Caledonia" = "blue",
+                               "Sint Maarten (Dutch part) "       = "blue",           
+                               "American Samoa"                 = "blue",
+                               "French Polynesia"                 = "blue",            
+                               Guam = "blue",
+                               Niue         = "blue",
+                               "Northern Mariana Islands"         = "blue",              
+                               Montserrat = "blue"))
+```
+

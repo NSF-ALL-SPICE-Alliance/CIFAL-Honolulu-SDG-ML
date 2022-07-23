@@ -1,0 +1,263 @@
+---
+title: "goal1_clean_summarise"
+author: "Connor Flynn"
+date: "7/21/2022"
+output: html_document
+---
+
+Goal: The goal of this Rmd is to clean and summarize the data on Sustainable Development Goal 1. 
+
+
+
+## Load Libraries
+
+The code chunk below reads in packages and functions used in this workflow:
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#load libraries
+if (!require(librarian)){
+  install.packages("librarian")
+  library(librarian)
+}
+
+librarian::shelf(tidyverse,
+                here,
+                janitor,
+                dplyr)
+
+options(scipen = 99)
+```
+
+
+Import data
+
+Each sustainable development goal (sdg) has it's own csv in the 'data' folder. 
+
+
+Goal 1
+```{r}
+goal1 <- read_csv(here("data/sdg_data/Goal1.csv"))
+
+```
+
+
+
+This is all the indicator data for Sustainable Development Goal 1 for SIDS.
+
+When we first import the data, we can see:
+  - There are multiple observations for one country and the same indicator. 
+      - This is to account for differences in data by year, age, sex, and geographic context for the same country.
+      - This is a great idea, *however*, an extremely significant amount of the data is NA with this specific scope. 
+  - We want the most recent picture of sustainable development goal measures for SIDS with as little NA values as possible, so:
+      - We we summarize the data by taking the most recent year of data available for each SIDS and the mean value of age, sex, and urban vs rural geography for that year. 
+      - This allows us to
+        - Have as recent of a dataset as possible with as little NA values as possible, although the number of NA's is still significant
+        - Keep the data frame to one SIDS per row and one sdg indicator per column.
+      
+Let's start cleaning:
+
+
+Convert Value Column to class numeric in order to perform functions on the Value Column
+```{r}
+goal1 <- goal1 %>% 
+  mutate(Value = as.numeric(Value))
+```
+
+
+The data has both NA and nan values so convert all missing data to NA
+
+```{r}
+goal1$Value[is.nan(goal1$Value)]<-NA
+```
+
+Drop NA values - no na's for this goal
+```{r}
+# # goal1 <- goal_1 %>% 
+#   drop_na(Value)
+```
+
+
+Eliminate Spaces from SIDS Names and Series Descriptions (indicators)
+```{r}
+goal1$GeoAreaName <- gsub(" ", "_", goal1$GeoAreaName)
+
+goal1$SeriesDescription <- gsub(" ", "_", goal1$SeriesDescription)
+```
+
+
+Look at Series Descriptions
+```{r}
+unique(goal1$SeriesDescription)
+```
+
+Filter for natural disaster related indicators because:
+  - Due to the nature of this data (disasters not occurring every year, and recovery taking many years) we want the most significant (highest) value for these indicators
+  - This does introduce some bias, but captures significant natural disasters for each SIDS (if one event has occurred in the last 20 years and the data has been collected)
+    
+
+
+```{r}
+goal1_natural_disaster <- goal1 %>% 
+  filter(SeriesDescription == "Number_of_people_affected_by_disaster_(number)"                                                                                                                
+| SeriesDescription == "Number_of_directly_affected_persons_attributed_to_disasters_per_100,000_population_(number)"                                                                   
+| SeriesDescription == "Number_of_injured_or_ill_people_attributed_to_disasters_(number)"                                                                                              
+| SeriesDescription == "Number_of_missing_persons_due_to_disaster_(number)"                                                                                                            
+| SeriesDescription == "Number_of_deaths_and_missing_persons_attributed_to_disasters_(number)"                                                                                         
+| SeriesDescription == "Number_of_deaths_due_to_disaster_(number)"                                                                                                                     
+| SeriesDescription == "Number_of_deaths_and_missing_persons_attributed_to_disasters_per_100,000_population_(number)"                                                                  
+| SeriesDescription == "Number_of_people_whose_damaged_dwellings_were_attributed_to_disasters_(number)"                                                                                
+| SeriesDescription == "Number_of_people_whose_livelihoods_were_disrupted_or_destroyed,_attributed_to_disasters_(number)"                                                              
+| SeriesDescription == "Number_of_people_whose_destroyed_dwellings_were_attributed_to_disasters_(number)"                                                                              
+| SeriesDescription == "Direct_agriculture_loss_attributed_to_disasters_(current_United_States_dollars)"                                                                               
+| SeriesDescription == "Direct_economic_loss_resulting_from_damaged_or_destroyed_critical_infrastructure_attributed_to_disasters_(current_United_States_dollars)"                      
+| SeriesDescription == "Direct_economic_loss_attributed_to_disasters_(current_United_States_dollars)" )
+```
+
+
+Group in order to get the strongest disaster event on record for each SIDS
+  - Some SIDS report zeroes for non disaster years and some don't, so the mean and median become biased
+  - Taking the strongest disaster does not account for frequency of disaster events but does capture a metric to measure the most significant disaster events
+  
+
+
+Group by Indicator and Place and take the higest value for each SIDS  
+```{r}
+
+goal1_natural_disaster_tidy_grouped <- goal1_natural_disaster %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  slice(which.max(Value))
+```
+
+Drop the time period in order to pivot_wider in the next step
+```{r}
+goal1_natural_disaster_tidy_grouped_max_no_time <- goal1_natural_disaster_tidy_grouped %>% 
+  select(!TimePeriod)
+```
+
+
+Drop all other columns outside of scope (mostly na)
+```{r}
+goal1_natural_disaster_tidy_grouped_max_no_time <- goal1_natural_disaster_tidy_grouped %>% 
+  select(SeriesDescription, Value, GeoAreaName)
+```
+
+
+Pivot data to get one SIDS per row and one indicator per column
+```{r}
+goal1_natural_disaster_wider <- goal1_natural_disaster_tidy_grouped_max_no_time %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = Value)
+```
+
+
+Clean column names using the janitor package
+```{r}
+goal1_natural_disaster_wider <- goal1_natural_disaster_wider %>% 
+  clean_names()
+```
+
+
+Now select for indicators unrelated to disasters because we will be taking the most recent data available for these indicators opposed to the highest value for the disaster indicators
+
+
+```{r}
+goal1_no_disaster <- goal1 %>% 
+  filter(SeriesDescription != "Number_of_people_affected_by_disaster_(number)"                                                                                                                
+    & SeriesDescription != "Number_of_directly_affected_persons_attributed_to_disasters_per_100,000_population_(number)"                                                                     
+    & SeriesDescription != "Number_of_injured_or_ill_people_attributed_to_disasters_(number)"                                                                                                
+    & SeriesDescription != "Number_of_missing_persons_due_to_disaster_(number)"                                                                                                              
+    & SeriesDescription != "Number_of_deaths_and_missing_persons_attributed_to_disasters_(number)"                                                                                           
+    & SeriesDescription != "Number_of_deaths_due_to_disaster_(number)"                                                                                                                       
+    & SeriesDescription != "Number_of_deaths_and_missing_persons_attributed_to_disasters_per_100,000_population_(number)"                                                                    
+    & SeriesDescription != "Number_of_people_whose_damaged_dwellings_were_attributed_to_disasters_(number)"                                                                                  
+    & SeriesDescription != "Number_of_people_whose_livelihoods_were_disrupted_or_destroyed,_attributed_to_disasters_(number)"                                                                
+    & SeriesDescription != "Number_of_people_whose_destroyed_dwellings_were_attributed_to_disasters_(number)"                                                                                
+    & SeriesDescription != "Direct_agriculture_loss_attributed_to_disasters_(current_United_States_dollars)"                                                                                 
+    & SeriesDescription != "Direct_economic_loss_resulting_from_damaged_or_destroyed_critical_infrastructure_attributed_to_disasters_(current_United_States_dollars)"                        
+    & SeriesDescription != "Direct_economic_loss_attributed_to_disasters_(current_United_States_dollars)" )
+```
+
+
+Group in order to get mean value from multiple categories of data for the same year
+```{r}
+
+goal1_no_disaster_tidy_grouped <- goal1_no_disaster %>% 
+  group_by(SeriesDescription, GeoAreaName, TimePeriod) %>% 
+  summarise(Value = mean(Value, na.rm = TRUE))
+```
+
+Select the data point with the most recent year for each SIDS and Indicator
+```{r}
+goal1_no_disaster_tidy_grouped_max <- goal1_no_disaster_tidy_grouped %>% 
+  group_by(SeriesDescription, GeoAreaName) %>% 
+  slice(which.max(TimePeriod))
+```
+
+
+Drop time period to pivot_wider in next step
+```{r}
+goal1_no_disaster_tidy_grouped_max_no_time <- goal1_no_disaster_tidy_grouped_max %>% 
+  select(!TimePeriod)
+```
+
+
+Pivot data to get one SIDS per row and one indicator per column
+```{r}
+goal1_no_disaster_wider <- goal1_no_disaster_tidy_grouped_max_no_time %>% 
+  pivot_wider(names_from = SeriesDescription,
+              values_from = Value)
+```
+
+
+Clean column names with the janitor package
+```{r}
+goal1_no_disaster_wider <- goal1_no_disaster_wider %>% 
+  clean_names()
+
+```
+
+
+Join natural disaster data with other indicator data
+```{r}
+goal1_wider_joined <- full_join(goal1_no_disaster_wider, goal1_natural_disaster_wider, by = "geo_area_name")
+```
+
+
+Write into a csv file to the most_recent_data folder
+
+```{r}
+write_csv(goal1_wider_joined, here("./most_recent/data_cleaned_and_summarized/goal1_most_recent.csv"))
+```
+
+
+Plot most recent data 
+
+```{r}
+most_recent_data <- table(goal1_no_disaster_tidy_grouped_max['TimePeriod'])
+
+most_recent_data <- as.data.frame(most_recent_data)
+```
+
+
+```{r}
+ggplot(data = most_recent_data, aes(x = Var1, y = Freq)) +
+  geom_col()
+```
+
+
+
+Plot all data 
+
+```{r}
+all_data_by_year <- table(goal1['TimePeriod'])
+
+all_data_by_year <- as.data.frame(all_data_by_year)
+```
+
+
+```{r}
+ggplot(data = all_data_by_year, aes(x = Var1, y = Freq)) +
+  geom_col()
+```
