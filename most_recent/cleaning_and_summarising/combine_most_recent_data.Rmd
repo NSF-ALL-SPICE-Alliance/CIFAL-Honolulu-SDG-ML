@@ -1,0 +1,74 @@
+---
+title: "combine_most_recent_data"
+author: "Connor Flynn"
+date: "7/25/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#load libraries
+if (!require(librarian)){
+  install.packages("librarian")
+  library(librarian)
+}
+
+librarian::shelf(tidyverse,
+                 plyr, # make sure to always load plyr before here or else there are conflicts or use here:here()
+                 here,
+                 janitor,
+                 purrr)
+
+options(scipen = 99)
+```
+
+
+```{r}
+goal1     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal1_most_recent.csv"))
+goal2     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal2_most_recent.csv"))
+goal3     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal3_most_recent.csv"))
+goal4     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal4_most_recent.csv"))
+goal5     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal5_most_recent.csv"))
+goal6     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal6_most_recent.csv"))
+goal7     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal7_most_recent.csv"))
+goal8     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal8_most_recent.csv"))
+goal9     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal9_most_recent.csv"))
+goal10     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal10_most_recent.csv"))
+goal11     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal11_most_recent.csv"))
+goal12     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal12_most_recent.csv"))
+goal13     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal13_most_recent.csv"))
+goal14     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal14_most_recent.csv"))
+goal15     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal15_most_recent.csv"))
+goal16     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal16_most_recent.csv"))
+goal17     <- read_csv(here("most_recent/data_cleaned_and_summarized/goal17_most_recent.csv"))
+```
+
+```{r}
+dfs<- list(goal1 ,
+goal2 ,
+goal3 ,
+goal4 ,
+goal5 ,
+goal6 ,
+goal7 ,
+goal8 ,
+goal9 ,
+goal10,
+goal11,
+goal12,
+goal13,
+goal14,
+goal15,
+goal16,
+goal17)
+```
+
+```{r}
+sdg_indicators_joined_most_recent <- join_all(dfs = dfs, type = "full", by = "geo_area_name")
+```
+
+```{r}
+write_csv(sdg_indicators_joined_most_recent, here("most_recent/data_cleaned_and_summarized/sdg_indicators_joined_most_recent.csv"))
+```
+

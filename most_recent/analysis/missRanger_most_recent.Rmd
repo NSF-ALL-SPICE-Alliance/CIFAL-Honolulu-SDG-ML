@@ -1,37 +1,78 @@
 ---
-title: "missRanger"
+title: "missRanger_most_recent"
 author: "Connor Flynn"
-date: "7/13/2022"
+date: "7/25/2022"
 output: html_document
 editor_options: 
   chunk_output_type: console
 ---
 
+Goal: There are 4 goals of this Rmd
+  1. Impute missing data using the missRanger() method (Random Forest)
+  2. Cluster the newly imputed data using kmeans, and visualize clusters
+  3. Plot example indicators to compare "true" vs imputed data
+  4. Determine variable importance by using Random Forest Regression
+    ex. What are the most important indicators in predicting y indicator
+  
+  
+Decision Making:
+  1. How much data do we impute
+    - All of it?
+    - Only indicators in which x percentage of SIDS have data 
+  2. How many clusters do we put into the kmeans() function (assisted by elbow plot from fviz_nrcluster)
+
+
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
-library(missRanger)
-library(here)
-library(janitor)
-library(cluster)
-library(factoextra)
-library(randomForest)
+
+#load libraries
+if (!require(librarian)){
+  install.packages("librarian")
+  library(librarian)
+}
+
+librarian::shelf(tidyverse,
+                here,
+                janitor,
+                dplyr,
+                missRanger,
+                cluster,
+                factoextra,
+                randomForest)
+
+
+
+
 options(scipen = 99)
 options(ggrepel.max.overlaps = Inf)
 ```
 
+
+
+
+Import Data
 ```{r}
-sdg_indicators <- read_csv(here("data/sdg_data/sdg_indicators.csv"))
+sdg_indicators <- read_csv(here("most_recent/data_cleaned_and_summarized/sdg_indicators_joined_most_recent.csv"))
 ```
 
+
+
+
+
+Drop Cuba and Singapore from the data because they are both significant outliers.
+Drop SIDS and Bonaire Sint Eustatius and Saba because they only appear in a few goals
 ```{r}
 sdg_indicators<- sdg_indicators %>% 
   filter(geo_area_name != "Cuba",
-         geo_area_name != "Singapore")
+         geo_area_name != "Singapore",
+         geo_area_name != "Small_island_developing_States_(SIDS)",
+         geo_area_name != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 
-
+Convert the first column (country names) to row names
 ```{r}
 sdg_indicators <- sdg_indicators %>% 
   remove_rownames %>% 
@@ -40,11 +81,15 @@ sdg_indicators <- sdg_indicators %>%
 
 
 
-
+*Determine how much data we want to impute
+  - Here, I decided that I only want to include columns (indicators) in which at least 40% of the SIDS have data for
 ```{r}
 sdg_indicators_less_na <- sdg_indicators[, which(colMeans(!is.na(sdg_indicators)) > 0.4)]
 ```
 
+
+
+Impute using missRanger function (Random Forest)
 ```{r}
 sdg_indicators_missRanger <- missRanger(sdg_indicators_less_na, 
                                         formula = . ~ ., 
@@ -54,14 +99,13 @@ sdg_indicators_missRanger <- missRanger(sdg_indicators_less_na,
                                       )
 ```
 
-
+View imputed data frame
 ```{r}
 sdg_indicators_missRanger
 ```
 
 
-Remove columns with 0 variance
-
+Remove columns with 0 variance because columns with 0 variance cause an error in clustering
 ```{r}
 sdg_indicators_missRanger_no_variance <- sdg_indicators_missRanger[, sapply(sdg_indicators_missRanger, var) != 0]
 ```
@@ -69,17 +113,20 @@ sdg_indicators_missRanger_no_variance <- sdg_indicators_missRanger[, sapply(sdg_
 
 
 
-create visualization to decide appropriate \# of clusters for kmeans function
+Create visualization to decide appropriate \# of clusters for kmeans function
 
 ```{r}
 fviz_nbclust(sdg_indicators_missRanger_no_variance, kmeans, method = "wss")
 ```
 
+Cluster the newly imputed data
 ```{r}
 set.seed(3)
-kmeans2 <- kmeans(sdg_indicators_missRanger_no_variance, center = 5, nstart = 100)
+kmeans2 <- kmeans(sdg_indicators_missRanger_no_variance, center = 4, nstart = 100)
 ```
 
+
+Visualize clusters
 ```{r}
 fviz_cluster(kmeans2, data = sdg_indicators_missRanger_no_variance,
 geom = c("text","point"),
@@ -98,7 +145,8 @@ geom = c("text","point"),
 ```
 
 
-True vs Imputed Plots
+
+True vs Imputed Data Comparisons
 
 ```{r}
 ggplot(data = sdg_indicators_missRanger_no_variance, aes(y = rownames(sdg_indicators_missRanger_no_variance), 
@@ -324,16 +372,25 @@ ggplot() +
 
 Random Forest
 
+Here, we use a random forest to determine variable importance in predicting indicators
 
+
+Create random forest object from imputed data
 ```{r}
 miss_Ranger_rf_international_poverty <- randomForest(proportion_of_population_below_international_poverty_line_percent ~ ., data = sdg_indicators_missRanger_no_variance, 
                    importance = TRUE)
 ```
 
+
+View summary of random forest
+  - Ideally, we want high variance explained and a low mean of squared residuals
 ```{r}
 miss_Ranger_rf_international_poverty
 ```
 
+
+
+View variable importance measured in both % increase in mean squared error (preferred) and inc node impurity
 ```{r}
 ImpData_international_poverty <- as.data.frame(importance(miss_Ranger_rf_international_poverty))
 ImpData_international_poverty$Var.Names <- row.names(ImpData_international_poverty)
