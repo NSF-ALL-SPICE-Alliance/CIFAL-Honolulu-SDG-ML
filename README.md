@@ -18,7 +18,7 @@ The data source for this project is the [United Nations SDG Indicator Database](
 
 When we first import the data, we can see:
   - There are multiple observations for one country and the same indicator. 
-      - This is to account for differences in data by year, age, sex, and geographic context for the same country.
+      - This is to account for differences in data by year, age, sex, and geographic context for the same SIDS.
       - This is a great idea, *however*, an extremely significant amount of the data is NA with this specific scope. 
       - So we summarise for two reasons:
         1. Have less NA values in the data we analyze
@@ -33,7 +33,7 @@ The data is summarised in **two different ways** in two different folders
     - Most of the output data that results is from 2020
     - viz?
     
-    - If there are multiple entries for the same indicator, same SIDS, and same year, then the mean of those values is taken
+    - If there are multiple entries for the same: indicator, SIDS, year, then the mean of those values is taken
   
   - The **hitorical folder** contains data summarised by taking the mean value of the indicator data across all years, ages, sexes, and geographic contexts
     - This allows us to compare SIDS from a historical perspective
