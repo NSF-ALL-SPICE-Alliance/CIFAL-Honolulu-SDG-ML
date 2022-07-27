@@ -11,8 +11,9 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(tidyverse)
 library(pheatmap)
+library(plyr)
 library(here)
-library(plyr) #wierd interaction that stops here form working
+ #weird interaction that stops here from working
 ```
 
 
@@ -121,8 +122,8 @@ goal2_wider <- goal2_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal2_wider <- goal2_wider  %>% 
-  filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+# goal2_wider <- goal2_wider  %>% 
+#   filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 ```{r}
@@ -241,8 +242,8 @@ goal4_wider <- goal4_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue) 
 
-goal4_wider <- goal4_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+# goal4_wider <- goal4_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 
@@ -302,8 +303,8 @@ goal5_wider <- goal5_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal5_wider <- goal5_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+# goal5_wider <- goal5_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 ```{r}
@@ -364,8 +365,8 @@ goal6_wider <- goal6_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal6_wider <- goal6_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+# goal6_wider <- goal6_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 
@@ -426,8 +427,8 @@ goal7_wider <- goal7_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal7_wider <- goal7_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+# goal7_wider <- goal7_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 ```{r}
@@ -548,8 +549,8 @@ goal9_wider <- goal9_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal9_wider <- goal9_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+# goal9_wider <- goal9_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 
@@ -610,8 +611,8 @@ goal10_wider <- goal10_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal10_wider <- goal10_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+# goal10_wider <- goal10_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 ```{r}
@@ -671,8 +672,8 @@ goal11_wider <- goal11_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal11_wider <- goal11_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+# goal11_wider <- goal11_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 ```{r}
@@ -731,9 +732,9 @@ goal12_wider <- goal12_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal12_wider <- goal12_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
-           #GeoAreaName != "Small island developing States (SIDS)")
+# goal12_wider <- goal12_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+#            #GeoAreaName != "Small island developing States (SIDS)")
 ```
 
 
@@ -794,9 +795,9 @@ goal13_wider <- goal13_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal13_wider <- goal13_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
-           #GeoAreaName != "Small island developing States (SIDS)")
+# goal13_wider <- goal13_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+#            #GeoAreaName != "Small island developing States (SIDS)")
 ```
 
 ```{r}
@@ -859,9 +860,9 @@ goal14_wider <- goal14_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal14_wider <- goal14_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
-           #GeoAreaName != "Small island developing States (SIDS)")
+# goal14_wider <- goal14_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+#            #GeoAreaName != "Small island developing States (SIDS)")
 ```
 
 ```{r}
@@ -922,9 +923,9 @@ goal15_wider <- goal15_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal15_wider <- goal15_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
-           #GeoAreaName != "Small island developing States (SIDS)")
+# goal15_wider <- goal15_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+#            #GeoAreaName != "Small island developing States (SIDS)")
 ```
 
 
@@ -988,9 +989,9 @@ goal16_wider <- goal16_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal16_wider <- goal16_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
-           #GeoAreaName != "Small island developing States (SIDS)")
+# goal16_wider <- goal16_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+#            #GeoAreaName != "Small island developing States (SIDS)")
 ```
 
 
@@ -1051,9 +1052,9 @@ goal17_wider <- goal17_tidy_grouped %>%
   pivot_wider(names_from = SeriesDescription,
               values_from = MedianValue)
 
-goal17_wider <- goal17_wider %>% 
-    filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
-           #GeoAreaName != "Small island developing States (SIDS)")
+# goal17_wider <- goal17_wider %>% 
+#     filter(GeoAreaName != "Bonaire,_Sint_Eustatius_and_Saba")
+#            #GeoAreaName != "Small island developing States (SIDS)")
 ```
 
 ```{r}
@@ -1115,7 +1116,7 @@ sdg_na_percentages_matrix <- data.matrix(sdg_na_percentages)
 
 
 ```{r}
-f <- pheatmap(sdg_na_percentages_matrix, treeheight_row = 0, treeheight_col = 0, display_numbers = TRUE, fontsize_number = 6, angle_col = 45)
+f <- pheatmap(sdg_na_percentages_matrix, treeheight_row = 0, treeheight_col = 0, display_numbers = TRUE, fontsize_number = 6, angle_col = 45, na_col = "red", main = "Missing SDG Data for SIDS, (measured in % of Missing Data per Goal)")
 ```
 
 

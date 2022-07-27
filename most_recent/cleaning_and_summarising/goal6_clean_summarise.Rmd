@@ -154,3 +154,7 @@ most_recent_data <- as.data.frame(most_recent_data)
 ggplot(data = most_recent_data, aes(x = Var1, y = Freq)) +
   geom_col()
 ```
+
+
+
+
