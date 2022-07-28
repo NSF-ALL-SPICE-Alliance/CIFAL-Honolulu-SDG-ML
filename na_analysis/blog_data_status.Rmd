@@ -44,7 +44,7 @@ The data source for this project is the [United Nations SDG Indicator Database](
 
 
 
-#### Missing Data
+#### 1. Missing Data
 
 
 #### In the *na_heat_map.Rmd*
@@ -93,8 +93,12 @@ f <- pheatmap(sdg_na_percentages_matrix, treeheight_row = 0, treeheight_col = 0,
       - Goal 7 has the least amount of missing data
       - Goal 5, Gender Equality, has the most amount of missing data
       - Goal 3, Good Health and Well-Being, and Goal 11, Sustainable Cities and Communities seem to have the most variance in misssing data among SIDS
-      - New Caledonia, French Polynesia, American Samoa, Guam, The Norhtern Mariana Islands, Sint Maarten, The U.S Virgin Islands, Bonaire Sint Eustatius and Saba, Aruba Curracao, The British Virgin Islands, Montserrat, Anguilla, Puerto Rico, and Niue hav ethe most missind gata across all SDG's
+      - New Caledonia, French Polynesia, American Samoa, Guam, The Norhtern Mariana Islands, Sint Maarten, The U.S Virgin Islands, Bonaire Sint Eustatius and Saba, Aruba Curracao, The British Virgin Islands, Montserrat, Anguilla, Puerto Rico, and Niue have the most missing  data across all SDG's
   - Limitations
+    - This visulaization does not demonstrate:
+      - The year the data was collected
+      - If data was collected for different ages, genders, and geographic contexts
+      - The quality of the data
 
 
 
@@ -102,7 +106,16 @@ f <- pheatmap(sdg_na_percentages_matrix, treeheight_row = 0, treeheight_col = 0,
 
 
 
-#### Most Recent Year Data was Collected
+
+#### 2. Most Recent Year Data was Collected
+
+#### In the *time.Rmd*
+  - Data is read in, one goal at a time
+  - Data is cleaned
+  - The most recent year of data is selected for each SIDS and Indicator
+  - The data is visualized to show us the quantity of the most recent data, by year, available for each SIDS
+  
+This is the result 
 
 ```{r, results='hide'}
 data <- read_csv(here("na_analysis/data/most_recent_year.csv"))
@@ -170,7 +183,7 @@ grid_data <- grid_data[-1,]
 ```
 
 ```{r, results='hide'}
-p <- ggplot(data) +
+circular_stacked_bar_chart <- ggplot(data) +
 
   
   # Add the stacked bar
@@ -183,7 +196,9 @@ p <- ggplot(data) +
   geom_segment(data=grid_data, aes(x = end, y = 100, xend = start, yend = 100), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
   geom_segment(data=grid_data, aes(x = end, y = 150, xend = start, yend = 150), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
   geom_segment(data=grid_data, aes(x = end, y = 200, xend = start, yend = 200), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
-
+  geom_segment(data=grid_data, aes(x = end, y = 250, xend = start, yend = 250), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+ 
+  
 
   ylim(-150,max(label_data$tot +50, na.rm=T)) +
   theme_minimal() +
@@ -199,7 +214,7 @@ p <- ggplot(data) +
   ggtitle("Most Recent SDG Indicator Data for SIDS") +
 
   theme(
-    plot.title=element_text( hjust=0.5, vjust=0, face='bold', margin=margin(t=40,b=-30))
+    plot.title=element_text( hjust=0.5, vjust=0, face='bold')#, margin=margin(t=40,b=-30))
   ) +
   
   # Add labels on top of each bar
@@ -211,6 +226,25 @@ p <- ggplot(data) +
 
 
 ```{r, include=TRUE, fig.dim=c(12,10), dpi=300}
-p
+circular_stacked_bar_chart
 ```
 
+
+
+##### Visulization Summary
+  - How to interpret
+    - This is not the case, but if every SIDS had data for every indicator goal for 2021, every bar would be the same size (537 Data Points) and same bright yellow color throughout
+    - Since some SIDS have more missing data than others, and the most recent year of data for each SIDS/Indicator varies, we see variation in colors and lengths of bars
+    - Each line in the circle represents 50 data points
+      - One of the SIDS with the least amount of missing indicator data is Mauritius which has data for ~ 350 of the 537 indicators. This can be validated in the heat map above since Mauritius has light blue/yellow colors throughout the goals, representing small percentages of missing data.
+  - Overall Picture 
+    - Almost every SIDS has some indicators where the most recent data is from ~ 2005 (purple)
+    - Almost every SIDS has some indicators where the most recent data is from 2021 (bright yellow)
+    - The majority of the most recent available data is from within the last 5 years
+  - Limitations
+    - This visualization does not break down data by goal
+    
+    
+#### Thanks for Reading!
+
+Check out the [github repo for this project](https://github.com/ConnorFlynn/SIDS_SDG_UNSTATS) for more information, and the application of some machine learning techniques to this data. 
