@@ -1,0 +1,216 @@
+---
+title: "Current Status of United Nations Sustainable Development Goal Indicator Data on Small Island Developing States (SIDS)"
+author: "Connor Flynn"
+date: "7/27/2022"
+output: html_document
+---
+
+```{r setup, echo=FALSE, message = FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, include = FALSE)
+#load libraries
+if (!require(librarian)){
+  install.packages("librarian")
+  library(librarian)
+}
+
+librarian::shelf(tidyverse,
+                here,
+                viridis,
+                pheatmap)
+
+options(scipen = 99)
+
+```
+
+
+![](/Users/connorflynn/Documents/SDG/SIDS_SDG_UNSTATS/visualizations/cuh_logo.png){width=90} ![](/Users/connorflynn/Documents/SDG/SIDS_SDG_UNSTATS/visualizations/cifal_logo.png){width=150} 
+
+
+
+
+
+The data source for this project is the [United Nations SDG Indicator Database](https://unstats.un.org/sdgs/dataportal/database)
+
+
+
+
+### This Post Adresses 2 Main Questions:
+
+1. What proportion of Sustainable Development Goal (SDG) Indicator Data is **missing** for each Small Island Developing State (SIDS)?
+
+2. How **recent** is the available data?
+
+
+
+
+
+#### Missing Data
+
+
+#### In the *na_heat_map.Rmd*
+  - Data is read in, one goal at a time
+  - The data is cleaned
+  - The median value is calculated for each SDG Indicator and SIDS 
+  - The data is joined
+  - A heat map is created visualizing Missing SDG Data for SIDS, (measured in % of Missing Data per Goal)
+
+
+This is the result
+
+
+```{r}
+sdg_na_percentages_joined <- read_csv(here("na_analysis/data/sdg_na_percentages_joined.csv"))
+```
+
+
+```{r, results = 'hide'}
+sdg_na_percentages_joined <- sdg_na_percentages_joined %>% 
+  remove_rownames %>% 
+  column_to_rownames(var="GeoAreaName")
+```
+
+
+```{r, results = 'hide'}
+sdg_na_percentages_matrix <- data.matrix(sdg_na_percentages_joined)
+```
+
+
+```{r, include=TRUE, fig.dim=c(12,10), dpi=300}
+f <- pheatmap(sdg_na_percentages_matrix, treeheight_row = 0, treeheight_col = 0, display_numbers = TRUE, fontsize_number = 6, angle_col = 45, na_col = "red", main = "Missing SDG Data for SIDS, (measured in % of Missing Data per Goal)")
+```
+
+
+##### Visualization Summary 
+  - How to interpret
+    - When looking at the top left box, we see that Trinidad and Tobago is missing 29% of the indicator data for SDG 7
+      - Goal 7 is to Ensure Access to affordable, reliable, sustainable and modern energy for all
+      - Goal 7 has six indicators including
+        - Proportion of population with access to electricity, Renewable energy share in the total final energy consumption, etc..
+      - Trinidad and Tobago has data for 4 of the 6 indicators
+  - Overall Picture
+    - A significant amount of data is missing
+    - Many SIDS are missing data for over 80% of the indicators for some SDG's
+      - Goal 7 has the least amount of missing data
+      - Goal 5, Gender Equality, has the most amount of missing data
+      - Goal 3, Good Health and Well-Being, and Goal 11, Sustainable Cities and Communities seem to have the most variance in misssing data among SIDS
+      - New Caledonia, French Polynesia, American Samoa, Guam, The Norhtern Mariana Islands, Sint Maarten, The U.S Virgin Islands, Bonaire Sint Eustatius and Saba, Aruba Curracao, The British Virgin Islands, Montserrat, Anguilla, Puerto Rico, and Niue hav ethe most missind gata across all SDG's
+  - Limitations
+
+
+
+
+
+
+
+#### Most Recent Year Data was Collected
+
+```{r, results='hide'}
+data <- read_csv(here("na_analysis/data/most_recent_year.csv"))
+```
+
+
+
+```{r, results='hide'}
+
+empty_bar <- 0
+
+nObsType <- nlevels(as.factor(data$TimePeriod))
+
+to_add <- data.frame( matrix(NA, empty_bar*nlevels(data$region)*nObsType, ncol(data)))
+
+colnames(to_add) <- colnames(data)
+
+to_add$region <- rep(levels(data$region), each=empty_bar*nObsType )
+
+to_add$GeoAreaName <- as.character(to_add$GeoAreaName)
+
+
+data <- rbind(data, to_add)
+
+data <- data %>% arrange(region, GeoAreaName)
+
+data <- as.data.frame(data)
+
+data$id <- NA
+
+data$id <- as.numeric(data$id)
+
+
+data$id <- data %>% group_indices(GeoAreaName)
+
+data <- data %>% arrange(region)
+
+
+
+```
+
+
+```{r, results='hide'}
+# Get the name and the y position of each label
+label_data <- data %>% group_by(id, GeoAreaName) %>% summarize(tot=sum(n))
+number_of_bar <- nrow(label_data)
+angle <- 90 - 360 * (label_data$id-0.5) /number_of_bar     # I substract 0.5 because the letter must have the angle of the center of the bars. Not extreme right(1) or extreme left (0)
+label_data$hjust <- ifelse( angle < -90, 1, 0)
+label_data$angle <- ifelse(angle < -90, angle+180, angle)
+ 
+# prepare a data frame for base lines
+base_data <- data %>% 
+  group_by(region) %>% 
+  summarize(start=min(id), end=max(id) - empty_bar) %>% 
+  rowwise() %>% 
+  mutate(title=mean(c(start, end)))
+ 
+# prepare a data frame for grid (scales)
+grid_data <- base_data
+grid_data$end <- grid_data$end[ c( nrow(grid_data), 1:nrow(grid_data)-1)] + 1
+grid_data$start <- grid_data$start - 1
+grid_data <- grid_data[-1,]
+
+
+```
+
+```{r, results='hide'}
+p <- ggplot(data) +
+
+  
+  # Add the stacked bar
+  geom_bar(aes(x=as.factor(id), y=n, fill=TimePeriod), stat="identity", alpha=0.5) +
+  scale_fill_viridis(discrete = FALSE) +
+  
+  #Add a val=100/75/50/25 lines. I do it at the beginning to make sur barplots are OVER it.
+  geom_segment(data=grid_data, aes(x = end, y = 0, xend = start, yend = 0), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 50, xend = start, yend = 50), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 100, xend = start, yend = 100), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 150, xend = start, yend = 150), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 200, xend = start, yend = 200), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+
+
+  ylim(-150,max(label_data$tot +50, na.rm=T)) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm")
+  ) +
+  coord_polar() +
+  
+  ggtitle("Most Recent SDG Indicator Data for SIDS") +
+
+  theme(
+    plot.title=element_text( hjust=0.5, vjust=0, face='bold', margin=margin(t=40,b=-30))
+  ) +
+  
+  # Add labels on top of each bar
+  geom_text(data=label_data, aes(x=id, y=tot+10, label=GeoAreaName, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_data$angle, inherit.aes = TRUE) 
+  
+
+```
+
+
+
+```{r, include=TRUE, fig.dim=c(12,10), dpi=300}
+p
+```
+

@@ -11,9 +11,8 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(tidyverse)
 library(pheatmap)
-library(plyr)
 library(here)
- #weird interaction that stops here from working
+
 ```
 
 
@@ -1079,37 +1078,43 @@ Join
 
 
 ```{r}
-sdg_na_percentages <- join_all(list(goal1_na,
-              goal2_na,
-              goal3_na,
-              goal4_na,
-              goal5_na,
-              goal6_na,
-              goal7_na,
-              goal8_na,
-              goal9_na,
-              goal10_na,
-              goal11_na,
-              goal12_na,
-              goal13_na,
-              goal14_na,
-              goal15_na,
-              goal16_na,
-              goal17_na),
-              by='GeoAreaName', type='full')
+goal1_2 <- full_join(goal1_na, goal2_na)
+goal1_3 <- full_join(goal1_2, goal3_na)
+goal1_4 <- full_join(goal1_3, goal4_na)
+goal1_5 <- full_join(goal1_4, goal5_na)
+goal1_6 <- full_join(goal1_5, goal6_na)
+goal1_7 <- full_join(goal1_6, goal7_na)
+goal1_8 <- full_join(goal1_7, goal8_na)
+goal1_9 <- full_join(goal1_8, goal9_na)
+goal1_10 <- full_join(goal1_9, goal10_na)
+goal1_11 <- full_join(goal1_10, goal11_na)
+goal1_12 <- full_join(goal1_11, goal12_na)
+goal1_13 <- full_join(goal1_12, goal13_na)
+goal1_14 <- full_join(goal1_13, goal14_na)
+goal1_15 <- full_join(goal1_14, goal15_na)
+goal1_16 <- full_join(goal1_15, goal16_na)
+goal1_17 <- full_join(goal1_16, goal17_na)
+
+sdg_na_percentages_joined <- goal1_17
+```
+
+
+
+```{r}
+write_csv(sdg_na_percentages_joined, here("na_analysis/data/sdg_na_percentages_joined.csv"))
 ```
 
 Visualize 
 
 ```{r}
-sdg_na_percentages <- sdg_na_percentages %>% 
+sdg_na_percentages_joined <- sdg_na_percentages_joined %>% 
   remove_rownames %>% 
   column_to_rownames(var="GeoAreaName")
 ```
 
 
 ```{r}
-sdg_na_percentages_matrix <- data.matrix(sdg_na_percentages)
+sdg_na_percentages_matrix <- data.matrix(sdg_na_percentages_joined)
 ```
 
 

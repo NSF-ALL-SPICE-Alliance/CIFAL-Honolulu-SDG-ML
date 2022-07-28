@@ -208,6 +208,12 @@ data <- time_df
 
 
 ```{r}
+write_csv(data, here("na_analysis/data/most_recent_year.csv"))
+```
+
+
+
+```{r}
 empty_bar <- 2
 nObsType <- nlevels(as.factor(data$TimePeriod))
 to_add <- data.frame( matrix(NA, empty_bar*nlevels(data$region)*nObsType, ncol(data)) )
