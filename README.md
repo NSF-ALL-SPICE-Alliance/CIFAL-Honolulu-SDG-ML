@@ -5,6 +5,10 @@
 <img src="visualizations/cuh_logo.png" width="120" /> <img src="visualizations/cifal_logo.png" width="210" />
 
 
+https://user-images.githubusercontent.com/76076246/181653279-151e65df-d8aa-4692-b1c5-781c0055af14.mp4
+
+
+
 
 
 
@@ -48,13 +52,22 @@ Within the most_recent and historical folders, there are 3 sub folders
     - Where imputation, clustering, and random forest regression happen 
 
 
-### Creating a Heat Map of NA Values, Per Goal for Each SIDS
+### Creating a Heat Map of NA Values, Per Goal for each SIDS
 
 The code for this step of the project can be found in the na_heat_map.Rmd
 
 The goal of this step is to better understand the mising data because ~ 55 % of the data is NA
 
 With the heat map visualization of NA values, we can see the significance of missing data for each SDG Goal in each SIDS
+
+
+### Creating a Circular Stacked Barplot of Most Recent Available Data for each SIDS
+
+The code for this step of the project can be found in the time.Rmd
+
+The goal of this step is to better understand the time period of the data going into the models
+
+These heat map and circular stacked bar plot  are discussed in greater detail in [this detailed post](https://rpubs.com/connorflynn/928001)
 
 ### Utilizing the missRanger Package for Imputation, then Clustering with K Means and Determining Variable Importance with the randomForest Package
 
