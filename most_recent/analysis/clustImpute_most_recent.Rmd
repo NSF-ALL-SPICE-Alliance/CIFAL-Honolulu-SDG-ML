@@ -4,7 +4,7 @@ author: "Connor Flynn"
 date: "7/25/2022"
 output: html_document
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 Goal: There are 4 goals of this Rmd
@@ -42,7 +42,9 @@ librarian::shelf(tidyverse,
                 cluster,
                 factoextra,
                 randomForest,
-                ClustImpute)
+                ClustImpute,
+                plotly,
+                estimatr)
 
 
 
@@ -392,5 +394,29 @@ ImpData$Var.Names <- row.names(ImpData)
 #   )
 
 View(ImpData)
+```
+
+```{r}
+p <- ggplot(sdg_indicators_ClustImpute_variance, aes(x = 	
+installed_renewable_electricity_generating_capacity_watts_per_capita,
+                                                y = proportion_of_population_below_international_poverty_line_percent, label = row.names(sdg_indicators_ClustImpute_variance))) +
+  geom_point()
+
+ggplotly(p)
+
+
+```
+
+```{r}
+ggplot(sdg_indicators_ClustImpute_variance, aes(x = 	
+proportion_of_population_below_international_poverty_line_percent,
+                                                y = installed_renewable_electricity_generating_capacity_watts_per_capita)) +
+  geom_smooth(method = "lm")
+
+fit <- lm_robust(proportion_of_population_below_international_poverty_line_percent ~ installed_renewable_electricity_generating_capacity_watts_per_capita, data = sdg_indicators_ClustImpute_variance)
+
+fit
+
+fitted <- fitted(fit)
 ```
 

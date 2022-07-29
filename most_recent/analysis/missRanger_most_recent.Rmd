@@ -4,7 +4,7 @@ author: "Connor Flynn"
 date: "7/25/2022"
 output: html_document
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 Goal: There are 4 goals of this Rmd
@@ -40,7 +40,8 @@ librarian::shelf(tidyverse,
                 missRanger,
                 cluster,
                 factoextra,
-                randomForest)
+                randomForest,
+                plotly)
 
 
 
@@ -415,5 +416,26 @@ names(ImpData_international_poverty)[names(ImpData_international_poverty) == '%I
 ImpData_international_poverty_highest_mse <- ImpData_international_poverty %>% 
   slice_max(per_inc_mse, n = 15)
 ```
+
+
+```{r}
+p <- ggplot(sdg_indicators_missRanger_no_variance, aes(x = 	
+installed_renewable_electricity_generating_capacity_watts_per_capita,
+                                                y = proportion_of_population_below_international_poverty_line_percent, label = row.names(sdg_indicators_missRanger_no_variance))) +
+  geom_point()
+
+ggplotly(p)
+```
+
+
+```{r}
+q <- ggplot(sdg_indicators_missRanger_no_variance, aes(x = 	
+prevalence_of_undernourishment_percent,
+                                                y = proportion_of_population_below_international_poverty_line_percent, label = row.names(sdg_indicators_missRanger_no_variance))) +
+  geom_point()
+
+ggplotly(q)
+```
+
 
 
