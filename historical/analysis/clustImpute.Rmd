@@ -16,6 +16,8 @@ library(cluster)
 library(factoextra)
 library(randomForest)
 library(ClustImpute)
+library(kableExtra)
+options(set.seed(3))
 options(scipen = 99)
 options(ggrepel.max.overlaps = Inf)
 ```
@@ -47,7 +49,7 @@ sdg_indicators_less_na <- sdg_indicators[, which(colMeans(!is.na(sdg_indicators)
 Impute using ClustImpute
 
 ```{r}
-res <- ClustImpute(sdg_indicators_less_na, nr_cluster = 3)
+res <- ClustImpute(sdg_indicators_less_na, nr_cluster = 5)
 ```
 
 
@@ -328,3 +330,16 @@ ImpData$Var.Names <- row.names(ImpData)
 View(ImpData)
 ```
 
+```{r}
+names(ImpData)[names(ImpData) == '%IncMSE'] <- 'per_inc_mse'
+
+
+ImpData <- ImpData %>% 
+  slice_max(per_inc_mse, n = 15)
+
+
+
+ImpData %>% 
+  kbl() %>% 
+  kable_styling()
+```
