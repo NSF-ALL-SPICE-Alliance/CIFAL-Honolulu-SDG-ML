@@ -16,6 +16,7 @@ library(janitor)
 library(cluster)
 library(factoextra)
 library(randomForest)
+library(kableExtra)
 options(scipen = 99)
 options(ggrepel.max.overlaps = Inf)
 ```
@@ -27,7 +28,9 @@ sdg_indicators <- read_csv(here("data/sdg_data/sdg_indicators.csv"))
 ```{r}
 sdg_indicators<- sdg_indicators %>% 
   filter(geo_area_name != "Cuba",
-         geo_area_name != "Singapore")
+         geo_area_name != "Singapore",
+         geo_area_name != "Small_island_developing_States_(SIDS)",
+         geo_area_name != "Bonaire,_Sint_Eustatius_and_Saba")
 ```
 
 
@@ -359,4 +362,9 @@ ImpData_international_poverty_highest_mse <- ImpData_international_poverty %>%
   slice_max(per_inc_mse, n = 15)
 ```
 
+```{r}
+ImpData_international_poverty_highest_mse %>% 
+  kbl() %>% 
+  kable_styling()
+```
 

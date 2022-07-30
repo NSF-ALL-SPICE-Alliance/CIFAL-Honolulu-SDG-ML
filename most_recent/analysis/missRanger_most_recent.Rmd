@@ -3,8 +3,9 @@ title: "missRanger_most_recent"
 author: "Connor Flynn"
 date: "7/25/2022"
 output: html_document
+  df_print: paged
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 Goal: There are 4 goals of this Rmd
@@ -41,11 +42,12 @@ librarian::shelf(tidyverse,
                 cluster,
                 factoextra,
                 randomForest,
-                plotly)
+                plotly,
+                kableExtra)
 
 
 
-
+options(set.seed(3))
 options(scipen = 99)
 options(ggrepel.max.overlaps = Inf)
 ```
@@ -147,6 +149,7 @@ geom = c("text","point"),
 
 
 
+
 True vs Imputed Data Comparisons
 
 ```{r}
@@ -188,7 +191,7 @@ ggplot(data = sdg_indicators_missRanger_no_variance, aes(y = rownames(sdg_indica
 Goal 13
 
 ```{r}
-goal13_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators$number_of_directly_affected_persons_attributed_to_disasters_per_100_000_population_number))]
+goal13_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators_less_na$number_of_directly_affected_persons_attributed_to_disasters_per_100_000_population_number))]
 
 cat(paste(goal13_na_example),sep=",")
 
@@ -224,7 +227,7 @@ ggplot(data = sdg_indicators_missRanger_no_variance, aes(y = rownames(sdg_indica
 Goal 3
 
 ```{r}
-goal3_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators$crude_death_rate_attributed_to_household_and_ambient_air_pollution_deaths_per_100_000_population))]
+goal3_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators_less_na$crude_death_rate_attributed_to_household_and_ambient_air_pollution_deaths_per_100_000_population))]
 
 cat(paste(goal3_na_example),sep=",")
 
@@ -263,7 +266,7 @@ ggplot(data = sdg_indicators_missRanger_no_variance, aes(y = rownames(sdg_indica
 Goal 4 
 
 ```{r}
-goal4_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators$proportion_of_schools_with_access_to_computers_for_pedagogical_purposes_by_education_level_percent))]
+goal4_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators_less_na$proportion_of_schools_with_access_to_computers_for_pedagogical_purposes_by_education_level_percent))]
 
 cat(paste(goal4_na_example),sep=",")
 ```
@@ -302,7 +305,7 @@ ggplot(data = sdg_indicators_missRanger_no_variance, aes(y = rownames(sdg_indica
 Goal 7
 
 ```{r}
-goal7_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators$proportion_of_population_with_access_to_electricity_by_urban_rural_percent))]
+goal7_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators_less_na$proportion_of_population_with_access_to_electricity_by_urban_rural_percent))]
 
 cat(paste(goal7_na_example),sep=",")
 ```
@@ -418,6 +421,16 @@ ImpData_international_poverty_highest_mse <- ImpData_international_poverty %>%
 ```
 
 
+
+
+```{r}
+ImpData_international_poverty_highest_mse %>% 
+  kbl() %>% 
+  kable_styling()
+
+```
+
+
 ```{r}
 p <- ggplot(sdg_indicators_missRanger_no_variance, aes(x = 	
 installed_renewable_electricity_generating_capacity_watts_per_capita,
@@ -438,4 +451,87 @@ ggplotly(q)
 ```
 
 
+```{r}
+z <- ggplot(sdg_indicators_missRanger_no_variance, aes(x = 	
+age_standardized_mortality_rate_attributed_to_household_and_ambient_air_pollution_deaths_per_100_000_population,
+                                                y = proportion_of_population_below_international_poverty_line_percent, label = row.names(sdg_indicators_missRanger_no_variance))) +
+  geom_point()
 
+ggplotly(z)
+```
+
+
+```{r}
+goal3.2_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators_less_na$age_standardized_mortality_rate_attributed_to_household_and_ambient_air_pollution_deaths_per_100_000_population))]
+
+cat(paste(goal3.2_na_example),sep=",")
+```
+
+```{r}
+ggplot(data = sdg_indicators_missRanger_no_variance, aes(y = rownames(sdg_indicators_missRanger_no_variance), 
+                                            x =  age_standardized_mortality_rate_attributed_to_household_and_ambient_air_pollution_deaths_per_100_000_population,
+                                            fill = rownames(sdg_indicators_missRanger_no_variance))) +
+  geom_col(show.legend = FALSE)  +
+  scale_fill_manual(values = c(Anguilla = "blue",
+                               Cook_Islands = "blue",
+                               Palau = "blue",
+                               Puerto_Rico = "blue",
+                               United_States_Virgin_Islands = "blue",
+                               Aruba = "blue",
+                               British_Virgin_Islands = "blue",
+                               Dominica = "blue",
+                               Saint_Kitts_and_Nevis = "blue",
+                               Curaçao = "blue",
+                               Marshall_Islands = "blue",
+                               Nauru = "blue",
+                               Tuvalu = "blue",
+                               New_Caledonia = "blue",
+                               "Sint_Maarten_(Dutch_part)" = "blue",
+                               American_Samoa = "blue",
+                               French_Polynesia = "blue",
+                               Guam = "blue",
+                               Montserrat = "blue",
+                               Niue = "blue",
+                               Northern_Mariana_Islands = "blue"))
+```
+
+
+
+
+
+```{r}
+s <- ggplot(sdg_indicators_missRanger_no_variance, aes(x = 	
+ilo_proportion_of_population_covered_by_at_least_one_social_protection_benefit_by_sex_percent,
+                                                y = proportion_of_population_below_international_poverty_line_percent, label = row.names(sdg_indicators_missRanger_no_variance))) +
+  geom_point()
+
+ggplotly(s)
+```
+
+
+
+```{r}
+w <- ggplot(sdg_indicators_missRanger_no_variance, aes(x = 	
+food_waste_per_capita_kg,
+                                                y = proportion_of_population_below_international_poverty_line_percent, label = row.names(sdg_indicators_missRanger_no_variance))) +
+  geom_point()
+
+ggplotly(w)
+```
+
+```{r}
+goal12_na_example <- row.names(sdg_indicators)[which(is.na(sdg_indicators_less_na$food_waste_per_capita_kg))]
+
+cat(paste(goal12_na_example),sep=",")
+```
+
+```{r}
+ggplot(data = sdg_indicators_missRanger_no_variance, aes(y = rownames(sdg_indicators_missRanger_no_variance), 
+                                            x =  food_waste_per_capita_kg,
+                                            fill = rownames(sdg_indicators_missRanger_no_variance))) +
+  geom_col(show.legend = FALSE)  +
+  scale_fill_manual(values = c(Anguilla = "blue",
+                               Cook_Islands = "blue",
+                               Montserrat = "blue",
+                               Niue = "blue"))
+```
