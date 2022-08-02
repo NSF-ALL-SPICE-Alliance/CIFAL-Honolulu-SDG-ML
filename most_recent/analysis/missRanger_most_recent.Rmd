@@ -43,7 +43,8 @@ librarian::shelf(tidyverse,
                 factoextra,
                 randomForest,
                 plotly,
-                kableExtra)
+                kableExtra,
+                randomForestExplainer)
 
 
 
@@ -399,17 +400,7 @@ View variable importance measured in both % increase in mean squared error (pref
 ImpData_international_poverty <- as.data.frame(importance(miss_Ranger_rf_international_poverty))
 ImpData_international_poverty$Var.Names <- row.names(ImpData_international_poverty)
 # 
-# ggplot(ImpData, aes(x=Var.Names, y=`%IncMSE`)) +
-#   geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`%IncMSE`), color="skyblue") +
-#   geom_point(aes(size = IncNodePurity), color="blue", alpha=0.6) +
-#   theme_light() +
-#   coord_flip() +
-#   theme(
-#     legend.position="bottom",
-#     panel.grid.major.y = element_blank(),
-#     panel.border = element_blank(),
-#     axis.ticks.y = element_blank()
-#   )
+
 
 View(ImpData_international_poverty)
 
@@ -429,6 +420,34 @@ ImpData_international_poverty_highest_mse %>%
   kable_styling()
 
 ```
+
+```{r}
+ImpData_international_poverty_highest_mse <- ImpData_international_poverty_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['per_inc_mse']]))
+```
+
+
+
+```{r}
+ggplot(ImpData_international_poverty_highest_mse, aes(x=Var.Names, y=`per_inc_mse`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`per_inc_mse`), color="skyblue") +
+  geom_point(aes(size = IncNodePurity), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+```{r}
+plot_predict_interaction(miss_Ranger_rf_international_poverty, sdg_indicators_missRanger_no_variance, "age_standardized_mortality_rate_attributed_to_household_and_ambient_air_pollution_deaths_per_100_000_population", "ilo_proportion_of_population_covered_by_at_least_one_social_protection_benefit_by_sex_percent")
+```
+
+
+
 
 
 ```{r}

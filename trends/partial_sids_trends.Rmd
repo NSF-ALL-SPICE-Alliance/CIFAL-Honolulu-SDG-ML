@@ -1,0 +1,176 @@
+---
+title: "trends"
+author: "Connor Flynn"
+date: "8/1/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#load libraries
+if (!require(librarian)){
+  install.packages("librarian")
+  library(librarian)
+}
+
+librarian::shelf(tidyverse,
+                here,
+                janitor,
+                dplyr,
+                missRanger,
+                cluster,
+                factoextra,
+                randomForest,
+                plotly,
+                kableExtra,
+                randomForestExplainer)
+
+
+
+options(set.seed(3))
+options(scipen = 99)
+options(ggrepel.max.overlaps = Inf)
+```
+
+
+Load in Data
+```{r}
+trends_data <- read_csv(here("data/sdg_data/partial_trends_data.csv"))
+
+sdg_indicators <- read_csv(here("most_recent/data_cleaned_and_summarized/sdg_indicators_joined_most_recent.csv"))
+```
+Impute sdg indicator data 
+
+*Determine how much data we want to impute
+  - Here, I decided that I only want to include columns (indicators) in which at least 40% of the SIDS have data for
+```{r}
+sdg_indicators_less_na <- sdg_indicators[, which(colMeans(!is.na(sdg_indicators)) > 0.4)]
+```
+
+
+
+Impute using missRanger function (Random Forest)
+```{r}
+sdg_indicators_missRanger <- missRanger(sdg_indicators_less_na, 
+                                        formula = . ~ ., 
+                                        num.trees = 1000,
+                                        seed = 3,
+                                        returnOOB = TRUE
+                                      )
+```
+
+Clean to Merge
+
+```{r}
+trends_data <- clean_names(trends_data)
+```
+
+```{r}
+trends_data <- trends_data %>%
+     mutate(country = recode(country, 
+                            "Bahamas, The" = 'Bahamas',
+                             "Micronesia, Fed. Sts." = 	"Micronesia_(Federated_States_of)",
+                            "St. Kitts and Nevis" = 	"Saint_Kitts_and_Nevis",
+                            	"St. Lucia" = 	"Saint_Lucia", 
+                            	"St. Vincent and the Grenadines" = "Saint_Vincent_and_the_Grenadines"
+                            
+                            ))
+```
+
+
+
+
+
+
+
+```{r}
+trends_data$country <- gsub(" ", "_", trends_data$country)
+```
+
+```{r}
+trends_data <- trends_data %>%
+  rename(geo_area_name = country)
+```
+
+
+```{r}
+trends_data <- trends_data %>%
+  select(geo_area_name, 
+         goal_1_dash, goal_1_trend, 
+         goal_2_dash, goal_2_trend, 
+         goal_3_dash, goal_3_trend, 
+         goal_4_dash, goal_4_trend, 
+         goal_5_dash, goal_5_trend,
+         goal_6_dash, goal_6_trend, 
+         goal_7_dash, goal_7_trend, 
+         goal_8_dash, goal_8_trend,
+         goal_9_dash, goal_9_trend, 
+         goal_10_dash, goal_10_trend, 
+         goal_11_dash, goal_11_trend, 
+         goal_12_dash, goal_12_trend, 
+         goal_13_dash, goal_13_trend, 
+         goal_14_dash, goal_14_trend, 
+         goal_15_dash, goal_15_trend, 
+         goal_16_dash, goal_16_trend, 
+         goal_17_dash, goal_17_trend)
+```
+
+
+
+```{r}
+trends_data_missRanger <- missRanger(trends_data, 
+                                        formula = . ~ ., 
+                                        num.trees = 1000,
+                                        seed = 3,
+                                        returnOOB = TRUE
+                                      )
+```
+
+
+
+
+Join
+
+```{r}
+sdg_indicators_trends <- left_join(sdg_indicators_missRanger, trends_data_missRanger, by = "geo_area_name")
+```
+
+
+```{r}
+sdg_indicators_trends <- sdg_indicators_trends %>%
+  remove_rownames %>%
+  column_to_rownames(var="geo_area_name")
+```
+
+
+Random Forest
+
+```{r}
+sdg_indicators_trends$goal_1_trend <- as.factor(sdg_indicators_trends$goal_1_trend)
+```
+
+
+```{r}
+missRanger_rf_goal1_trends <- randomForest(goal_1_trend ~ ., data = sdg_indicators_trends, 
+                   importance = TRUE, na.action = "na.omit", )
+```
+
+
+```{r}
+missRanger_rf_goal1_trends
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal1_trends <- as.data.frame(importance(missRanger_rf_goal1_trends))
+ImpData_missRanger_rf_goal1_trends$Var.Names <- row.names(ImpData_missRanger_rf_goal1_trends)
+
+
+
+ImpData_missRanger_rf_goal1_trends
+
+
+
+
+
