@@ -3,6 +3,8 @@ title: "trends"
 author: "Connor Flynn"
 date: "8/1/2022"
 output: html_document
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -128,6 +130,9 @@ trends_data_missRanger <- missRanger(trends_data,
 ```
 
 
+```{r}
+trends_data_missRanger
+```
 
 
 Join
@@ -173,4 +178,1156 @@ ImpData_missRanger_rf_goal1_trends
 
 
 
+
+ImpData_missRanger_rf_goal1_trends_highest_mse <- ImpData_missRanger_rf_goal1_trends %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal1_trends_highest_mse <- ImpData_missRanger_rf_goal1_trends_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal1_trends_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+
+Goal 2 
+
+
+
+```{r}
+sdg_indicators_trends$goal_2_trend <- as.factor(sdg_indicators_trends$goal_2_trend)
+```
+
+
+```{r}
+missRanger_rf_goal_2_trend <- randomForest(goal_2_trend ~ ., data = sdg_indicators_trends, 
+                   importance = TRUE, na.action = "na.omit", )
+```
+
+
+```{r}
+missRanger_rf_goal_2_trend
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal_2_trend <- as.data.frame(importance(missRanger_rf_goal_2_trend))
+ImpData_missRanger_rf_goal_2_trend$Var.Names <- row.names(ImpData_missRanger_rf_goal_2_trend)
+
+
+
+ImpData_missRanger_rf_goal_2_trend
+
+
+
+
+
+ImpData_missRanger_rf_goal_2_trend_highest_mse <- ImpData_missRanger_rf_goal_2_trend %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal_2_trend_highest_mse <- ImpData_missRanger_rf_goal_2_trend_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal_2_trend_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Dash Analysis
+
+
+```{r}
+
+dash_data <- trends_data %>% 
+  select(geo_area_name, 
+goal_1_dash,
+goal_2_dash,
+goal_3_dash,
+goal_4_dash,
+goal_5_dash,
+goal_6_dash,
+goal_7_dash,
+goal_8_dash,
+goal_9_dash,
+goal_10_dash,
+goal_11_dash,
+goal_12_dash,
+goal_13_dash,
+goal_14_dash,
+goal_15_dash,
+goal_16_dash,
+goal_17_dash)
+```
+
+
+
+```{r}
+dash_data_sids <- left_join(sdg_indicators, dash_data, by = "geo_area_name")
+```
+
+```{r}
+dash_data_sids <- dash_data_sids %>% 
+  select(geo_area_name, 
+goal_1_dash,
+goal_2_dash,
+goal_3_dash,
+goal_4_dash,
+goal_5_dash,
+goal_6_dash,
+goal_7_dash,
+goal_8_dash,
+goal_9_dash,
+goal_10_dash,
+goal_11_dash,
+goal_12_dash,
+goal_13_dash,
+goal_14_dash,
+goal_15_dash,
+goal_16_dash,
+goal_17_dash)
+```
+
+
+```{r}
+dash_data_sids <- drop_na(dash_data_sids)
+```
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators <- left_join(dash_data_sids, sdg_indicators_missRanger, by = "geo_area_name")
+```
+
+
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators <- dash_data_sids_missRanger_sdg_indicators %>% 
+  remove_rownames %>% 
+  column_to_rownames(var="geo_area_name")
+```
+
+Random Forest
+
+
+Goal 1
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_1_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_1_dash)
+```
+
+
+```{r}
+missRanger_rf_goal1_dash<- randomForest(goal_1_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal1_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal1_dash <- as.data.frame(importance(missRanger_rf_goal1_dash))
+ImpData_missRanger_rf_goal1_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal1_dash)
+
+
+
+ImpData_missRanger_rf_goal1_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal1_dash_highest_mse <- ImpData_missRanger_rf_goal1_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal1_dash_highest_mse <- ImpData_missRanger_rf_goal1_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal1_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 2 
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_2_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_2_dash)
+```
+
+
+```{r}
+missRanger_rf_goal2_dash<- randomForest(goal_2_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal2_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal2_dash <- as.data.frame(importance(missRanger_rf_goal2_dash))
+ImpData_missRanger_rf_goal2_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal2_dash)
+
+
+
+ImpData_missRanger_rf_goal2_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal2_dash_highest_mse <- ImpData_missRanger_rf_goal2_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal2_dash_highest_mse <- ImpData_missRanger_rf_goal2_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal2_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+Goal 3
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_3_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_3_dash)
+```
+
+
+```{r}
+missRanger_rf_goal3_dash<- randomForest(goal_3_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal3_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal3_dash <- as.data.frame(importance(missRanger_rf_goal3_dash))
+ImpData_missRanger_rf_goal3_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal3_dash)
+
+
+
+ImpData_missRanger_rf_goal3_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal3_dash_highest_mse <- ImpData_missRanger_rf_goal3_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal3_dash_highest_mse <- ImpData_missRanger_rf_goal3_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal3_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 4 
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_4_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_4_dash)
+```
+
+
+```{r}
+missRanger_rf_goal4_dash<- randomForest(goal_4_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal4_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal4_dash <- as.data.frame(importance(missRanger_rf_goal4_dash))
+ImpData_missRanger_rf_goal4_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal4_dash)
+
+
+
+ImpData_missRanger_rf_goal4_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal4_dash_highest_mse <- ImpData_missRanger_rf_goal4_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal4_dash_highest_mse <- ImpData_missRanger_rf_goal4_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal4_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 5 
+
+
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_5_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_5_dash)
+```
+
+
+```{r}
+missRanger_rf_goal5_dash<- randomForest(goal_5_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal5_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal5_dash <- as.data.frame(importance(missRanger_rf_goal5_dash))
+ImpData_missRanger_rf_goal5_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal5_dash)
+
+
+
+ImpData_missRanger_rf_goal5_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal5_dash_highest_mse <- ImpData_missRanger_rf_goal5_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal5_dash_highest_mse <- ImpData_missRanger_rf_goal5_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal5_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+Goal 6 
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_6_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_6_dash)
+```
+
+
+```{r}
+missRanger_rf_goal6_dash<- randomForest(goal_6_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal6_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal6_dash <- as.data.frame(importance(missRanger_rf_goal6_dash))
+ImpData_missRanger_rf_goal6_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal6_dash)
+
+
+
+ImpData_missRanger_rf_goal6_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal6_dash_highest_mse <- ImpData_missRanger_rf_goal6_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal6_dash_highest_mse <- ImpData_missRanger_rf_goal6_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal6_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.5) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+
+
+Goal 7 
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_7_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_7_dash)
+```
+
+
+```{r}
+missRanger_rf_goal7_dash<- randomForest(goal_7_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal7_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal7_dash <- as.data.frame(importance(missRanger_rf_goal7_dash))
+ImpData_missRanger_rf_goal7_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal7_dash)
+
+
+
+ImpData_missRanger_rf_goal7_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal7_dash_highest_mse <- ImpData_missRanger_rf_goal7_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal7_dash_highest_mse <- ImpData_missRanger_rf_goal7_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal7_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+Goal 8 
+
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_8_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_8_dash)
+```
+
+
+```{r}
+missRanger_rf_goal8_dash<- randomForest(goal_8_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal8_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal8_dash <- as.data.frame(importance(missRanger_rf_goal8_dash))
+ImpData_missRanger_rf_goal8_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal8_dash)
+
+
+
+ImpData_missRanger_rf_goal8_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal8_dash_highest_mse <- ImpData_missRanger_rf_goal8_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal8_dash_highest_mse <- ImpData_missRanger_rf_goal8_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal8_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 9 
+
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_9_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_9_dash)
+```
+
+
+```{r}
+missRanger_rf_goal9_dash<- randomForest(goal_9_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal9_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal9_dash <- as.data.frame(importance(missRanger_rf_goal9_dash))
+ImpData_missRanger_rf_goal9_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal9_dash)
+
+
+
+ImpData_missRanger_rf_goal9_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal9_dash_highest_mse <- ImpData_missRanger_rf_goal9_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal9_dash_highest_mse <- ImpData_missRanger_rf_goal9_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal9_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+
+Goal 10 
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_10_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_10_dash)
+```
+
+
+```{r}
+missRanger_rf_goal10_dash<- randomForest(goal_10_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal10_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal10_dash <- as.data.frame(importance(missRanger_rf_goal10_dash))
+ImpData_missRanger_rf_goal10_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal10_dash)
+
+
+
+ImpData_missRanger_rf_goal10_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal10_dash_highest_mse <- ImpData_missRanger_rf_goal10_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal10_dash_highest_mse <- ImpData_missRanger_rf_goal10_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal10_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+Goal 11
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_11_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_11_dash)
+```
+
+
+```{r}
+missRanger_rf_goal11_dash<- randomForest(goal_11_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal11_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal11_dash <- as.data.frame(importance(missRanger_rf_goal11_dash))
+ImpData_missRanger_rf_goal11_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal11_dash)
+
+
+
+ImpData_missRanger_rf_goal11_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal11_dash_highest_mse <- ImpData_missRanger_rf_goal11_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal11_dash_highest_mse <- ImpData_missRanger_rf_goal11_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal11_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+
+Goal 12 
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_12_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_12_dash)
+```
+
+
+```{r}
+missRanger_rf_goal12_dash<- randomForest(goal_12_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal12_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal12_dash <- as.data.frame(importance(missRanger_rf_goal12_dash))
+ImpData_missRanger_rf_goal12_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal12_dash)
+
+
+
+ImpData_missRanger_rf_goal12_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal12_dash_highest_mse <- ImpData_missRanger_rf_goal12_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal12_dash_highest_mse <- ImpData_missRanger_rf_goal12_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal12_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 13
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_13_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_13_dash)
+```
+
+
+```{r}
+missRanger_rf_goal13_dash<- randomForest(goal_13_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal13_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal13_dash <- as.data.frame(importance(missRanger_rf_goal13_dash))
+ImpData_missRanger_rf_goal13_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal13_dash)
+
+
+
+ImpData_missRanger_rf_goal13_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal13_dash_highest_mse <- ImpData_missRanger_rf_goal13_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal13_dash_highest_mse <- ImpData_missRanger_rf_goal13_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal13_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+
+
+Goal 14
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_14_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_14_dash)
+```
+
+
+```{r}
+missRanger_rf_goal14_dash<- randomForest(goal_14_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal14_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal14_dash <- as.data.frame(importance(missRanger_rf_goal14_dash))
+ImpData_missRanger_rf_goal14_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal14_dash)
+
+
+
+ImpData_missRanger_rf_goal14_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal14_dash_highest_mse <- ImpData_missRanger_rf_goal14_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 114)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal14_dash_highest_mse <- ImpData_missRanger_rf_goal14_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal14_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 15
+
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_15_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_15_dash)
+```
+
+
+```{r}
+missRanger_rf_goal15_dash<- randomForest(goal_15_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal15_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal15_dash <- as.data.frame(importance(missRanger_rf_goal15_dash))
+ImpData_missRanger_rf_goal15_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal15_dash)
+
+
+
+ImpData_missRanger_rf_goal15_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal15_dash_highest_mse <- ImpData_missRanger_rf_goal15_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal15_dash_highest_mse <- ImpData_missRanger_rf_goal15_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal15_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+
+
+Goal 16
+
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_16_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_16_dash)
+```
+
+
+```{r}
+missRanger_rf_goal16_dash<- randomForest(goal_16_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal16_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal16_dash <- as.data.frame(importance(missRanger_rf_goal16_dash))
+ImpData_missRanger_rf_goal16_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal16_dash)
+
+
+
+ImpData_missRanger_rf_goal16_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal16_dash_highest_mse <- ImpData_missRanger_rf_goal16_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 116)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal16_dash_highest_mse <- ImpData_missRanger_rf_goal16_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal16_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 17
+
+
+```{r}
+dash_data_sids_missRanger_sdg_indicators$goal_17_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_17_dash)
+```
+
+
+```{r}
+missRanger_rf_goal17_dash<- randomForest(goal_17_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal17_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal17_dash <- as.data.frame(importance(missRanger_rf_goal17_dash))
+ImpData_missRanger_rf_goal17_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal17_dash)
+
+
+
+ImpData_missRanger_rf_goal17_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal17_dash_highest_mse <- ImpData_missRanger_rf_goal17_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal17_dash_highest_mse <- ImpData_missRanger_rf_goal17_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal17_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+
+Investigating
+
+
+```{r}
+s <- ggplot(dash_data_sids_missRanger_sdg_indicators, aes(x = 	
+parties_meeting_their_commitments_and_obligations_in_transmitting_information_as_required_by_rotterdam_convention_on_hazardous_waste_and_other_chemicals,
+                                                y = rownames(dash_data_sids_missRanger_sdg_indicators), label = row.names(dash_data_sids_missRanger_sdg_indicators))) +
+  geom_point()
+
+ggplotly(s)
+```
 
