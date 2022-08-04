@@ -1,14 +1,63 @@
 ---
-title: "trends"
+title: "random_forest_SDR_2022"
 author: "Connor Flynn"
-date: "8/1/2022"
+date: "8/4/2022"
 output: html_document
-editor_options: 
-  chunk_output_type: console
 ---
+
+Rmd Outline
+
+Goal: Using both Tier 1 and Tier 2 SDG Indicators, Explore the question ->  What are the drivers/most important predictors of the status(color) of a SIDS two lowest performing indicators per SDG? 
+
+Useful Links:
+Data Souces
+https://dashboards.sdgindex.org/downloads
+https://unstats.un.org/sdgs/dataportal/database
+
+Metadata
+https://unstats.un.org/sdgs/files/Tier%20Classification%20of%20SDG%20Indicators_9%20Jun%202022_web.pdf
+https://unstats.un.org/sdgs/metadata/
+
+Methodology
+https://dashboards.sdgindex.org/downloads
+
+Step 1: Read in data that is summarized by taking the most recent year of data for each indicator/SIDS. If there are multiple indicator values for the most recent year/SIDS, the mean of those values is taken.
+  - The data is cleaned and summarized in the rmd's contained in this folder SIDS_SDG_UNSTATS/most_recent/data_cleaned_and_summarized
+  - The data is joined in the combine_most_recent_data.Rmd
+  
+Step 2: Impute this data using random forest imputation with the missRanger package
+
+Step 3: Read in data from the Sustainable Development Report 2022 for the most recent goal dashes(colors)
+  - green: Goal Achievement 
+  - yellow: Challenges Remain
+  - orange: Significant Challenges
+  - red: Major Challenges
+  - grey: Insufficient Data
+  
+
+Each Tier 1 SDG Indicator is assigned a color based on thresholds of the indicator value
+
+Each Tier SDG is is assigned a color based on the colors of it's indicators
+ - "We then took the average of the two rescaled variables on which the country performed worst to identify the rating
+for the goal. We applied the added rule that in order to score green for the goal both indicators had to be green –
+otherwise the goal would be rated yellow. Similarly, a red score was applied only if both worst-performing
+indicators score red. If the country has only one data point under the SDG then the color rating for that indicator
+determines the overall rating for the goal. If the country has less than 50% of the indicators available under a goal
+the dashboard color for that goal is “grey”."
+
+Step 4: Join Step 1 Data with Step 3 Data
+
+
+Step 5: Run Random Forest Classification Models predicting the color(classification) of each SDG for each SIDS
+
+Step 6: Determine Variable Importance from each random forest model
+
+
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 
 #load libraries
 if (!require(librarian)){
@@ -32,27 +81,26 @@ librarian::shelf(tidyverse,
 
 options(set.seed(3))
 options(scipen = 99)
-options(ggrepel.max.overlaps = Inf)
 ```
 
 
-Load in Data
-```{r}
-trends_data <- read_csv(here("data/sdg_data/sustainable_development_report_2022.csv"))
+Step 1: Read in data that is summarized by taking the most recent year of data for each indicator/SIDS. If there are multiple indicator values for the most recent year/SIDS, the mean of those values is taken.
 
+```{r}
 sdg_indicators <- read_csv(here("most_recent/data_cleaned_and_summarized/sdg_indicators_joined_most_recent.csv"))
 ```
-Impute sdg indicator data 
 
-*Determine how much data we want to impute
+
+Step 2: Impute this data using random forest imputation with the missRanger package
+
+Determine how much data we want to impute
   - Here, I decided that I only want to include columns (indicators) in which at least 40% of the SIDS have data for
 ```{r}
 sdg_indicators_less_na <- sdg_indicators[, which(colMeans(!is.na(sdg_indicators)) > 0.4)]
 ```
 
 
-
-Impute using missRanger function (Random Forest)
+Impute using missRanger function (Random Forest Imputation)
 ```{r}
 sdg_indicators_missRanger <- missRanger(sdg_indicators_less_na, 
                                         formula = . ~ ., 
@@ -62,14 +110,25 @@ sdg_indicators_missRanger <- missRanger(sdg_indicators_less_na,
                                       )
 ```
 
-Clean to Merge
+
+
+Step 3: Read in data from the Sustainable Development Report 2022 for the most recent goal classification(color) for each SIDS/SDG
+
 
 ```{r}
-trends_data <- clean_names(trends_data)
+sdg_report_classifier_data <- read_csv(here("data/sdg_data/sustainable_development_report_2022.csv"))
+```
+
+
+
+Clean, Select Classifier Data
+
+```{r}
+sdg_report_classifier_data <- clean_names(sdg_report_classifier_data)
 ```
 
 ```{r}
-trends_data <- trends_data %>%
+sdg_report_classifier_data <- sdg_report_classifier_data %>%
      mutate(country = recode(country, 
                             "Bahamas, The" = 'Bahamas',
                              "Micronesia, Fed. Sts." = 	"Micronesia_(Federated_States_of)",
@@ -82,196 +141,18 @@ trends_data <- trends_data %>%
 
 
 
-
-
-
-
 ```{r}
-trends_data$country <- gsub(" ", "_", trends_data$country)
+sdg_report_classifier_data$country <- gsub(" ", "_", sdg_report_classifier_data$country)
 ```
 
 ```{r}
-trends_data <- trends_data %>%
+sdg_report_classifier_data <- sdg_report_classifier_data %>%
   rename(geo_area_name = country)
 ```
 
 
 ```{r}
-trends_data <- trends_data %>%
-  select(geo_area_name, 
-         goal_1_dash, goal_1_trend, 
-         goal_2_dash, goal_2_trend, 
-         goal_3_dash, goal_3_trend, 
-         goal_4_dash, goal_4_trend, 
-         goal_5_dash, goal_5_trend,
-         goal_6_dash, goal_6_trend, 
-         goal_7_dash, goal_7_trend, 
-         goal_8_dash, goal_8_trend,
-         goal_9_dash, goal_9_trend, 
-         goal_10_dash, goal_10_trend, 
-         goal_11_dash, goal_11_trend, 
-         goal_12_dash, goal_12_trend, 
-         goal_13_dash, goal_13_trend, 
-         goal_14_dash, goal_14_trend, 
-         goal_15_dash, goal_15_trend, 
-         goal_16_dash, goal_16_trend, 
-         goal_17_dash, goal_17_trend)
-```
-
-
-
-```{r}
-trends_data_missRanger <- missRanger(trends_data, 
-                                        formula = . ~ ., 
-                                        num.trees = 1000,
-                                        seed = 3,
-                                        returnOOB = TRUE
-                                      )
-```
-
-
-```{r}
-trends_data_missRanger
-```
-
-
-Join
-
-```{r}
-sdg_indicators_trends <- left_join(sdg_indicators_missRanger, trends_data_missRanger, by = "geo_area_name")
-```
-
-
-```{r}
-sdg_indicators_trends <- sdg_indicators_trends %>%
-  remove_rownames %>%
-  column_to_rownames(var="geo_area_name")
-```
-
-
-Random Forest
-
-```{r}
-sdg_indicators_trends$goal_1_trend <- as.factor(sdg_indicators_trends$goal_1_trend)
-```
-
-
-```{r}
-missRanger_rf_goal1_trends <- randomForest(goal_1_trend ~ ., data = sdg_indicators_trends, 
-                   importance = TRUE, na.action = "na.omit", )
-```
-
-
-```{r}
-missRanger_rf_goal1_trends
-```
-
-
-```{r}
-ImpData_missRanger_rf_goal1_trends <- as.data.frame(importance(missRanger_rf_goal1_trends))
-ImpData_missRanger_rf_goal1_trends$Var.Names <- row.names(ImpData_missRanger_rf_goal1_trends)
-
-
-
-ImpData_missRanger_rf_goal1_trends
-
-
-
-
-
-ImpData_missRanger_rf_goal1_trends_highest_mse <- ImpData_missRanger_rf_goal1_trends %>% 
-  slice_max(MeanDecreaseAccuracy, n = 15)
-
-
-```
-
-```{r}
-ImpData_missRanger_rf_goal1_trends_highest_mse <- ImpData_missRanger_rf_goal1_trends_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
-```
-
-
-```{r}
-ggplot(ImpData_missRanger_rf_goal1_trends_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
-  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
-  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
-  theme_light() +
-  coord_flip() +
-  theme(
-    legend.position="bottom",
-    panel.grid.major.y = element_blank(),
-    panel.border = element_blank(),
-    axis.ticks.y = element_blank()
-  )
-```
-
-
-
-
-Goal 2 
-
-
-
-```{r}
-sdg_indicators_trends$goal_2_trend <- as.factor(sdg_indicators_trends$goal_2_trend)
-```
-
-
-```{r}
-missRanger_rf_goal_2_trend <- randomForest(goal_2_trend ~ ., data = sdg_indicators_trends, 
-                   importance = TRUE, na.action = "na.omit", )
-```
-
-
-```{r}
-missRanger_rf_goal_2_trend
-```
-
-
-```{r}
-ImpData_missRanger_rf_goal_2_trend <- as.data.frame(importance(missRanger_rf_goal_2_trend))
-ImpData_missRanger_rf_goal_2_trend$Var.Names <- row.names(ImpData_missRanger_rf_goal_2_trend)
-
-
-
-ImpData_missRanger_rf_goal_2_trend
-
-
-
-
-
-ImpData_missRanger_rf_goal_2_trend_highest_mse <- ImpData_missRanger_rf_goal_2_trend %>% 
-  slice_max(MeanDecreaseAccuracy, n = 15)
-
-
-```
-
-```{r}
-ImpData_missRanger_rf_goal_2_trend_highest_mse <- ImpData_missRanger_rf_goal_2_trend_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
-```
-
-
-```{r}
-ggplot(ImpData_missRanger_rf_goal_2_trend_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
-  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
-  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
-  theme_light() +
-  coord_flip() +
-  theme(
-    legend.position="bottom",
-    panel.grid.major.y = element_blank(),
-    panel.border = element_blank(),
-    axis.ticks.y = element_blank()
-  )
-```
-
-
-
-Dash Analysis
-
-
-```{r}
-
-dash_data <- trends_data %>% 
+sdg_report_classifier_data <- sdg_report_classifier_data %>% 
   select(geo_area_name, 
 goal_1_dash,
 goal_2_dash,
@@ -294,12 +175,16 @@ goal_17_dash)
 
 
 
+Left join to match Sustainable Development Report SIDS(37) with all SIDS(54)
 ```{r}
-dash_data_sids <- left_join(sdg_indicators, dash_data, by = "geo_area_name")
+sdg_report_classifier_data <- left_join(sdg_indicators, sdg_report_classifier_data, by = "geo_area_name")
 ```
 
+
+
+
 ```{r}
-dash_data_sids <- dash_data_sids %>% 
+sdg_report_classifier_data <- sdg_report_classifier_data %>% 
   select(geo_area_name, 
 goal_1_dash,
 goal_2_dash,
@@ -320,38 +205,50 @@ goal_16_dash,
 goal_17_dash)
 ```
 
-
+Drop SIDS that were not a part of the 2022 Sustainable Development Report
 ```{r}
-dash_data_sids <- drop_na(dash_data_sids)
-```
-
-```{r}
-dash_data_sids_missRanger_sdg_indicators <- left_join(dash_data_sids, sdg_indicators_missRanger, by = "geo_area_name")
+sdg_report_classifier_data <- drop_na(sdg_report_classifier_data)
 ```
 
 
 
+Step 4: Join Step 1 Data with Step 3 Data
+
+Join SIDS classification data with tier 1 and tier 2 indicator data for 37 SIDS
 ```{r}
-dash_data_sids_missRanger_sdg_indicators <- dash_data_sids_missRanger_sdg_indicators %>% 
+sdg_report_classifier_data_missRanger_sdg_indicators <- left_join(sdg_report_classifier_data, sdg_indicators_missRanger, by = "geo_area_name")
+```
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators <- sdg_report_classifier_data_missRanger_sdg_indicators %>% 
   remove_rownames %>% 
   column_to_rownames(var="geo_area_name")
 ```
 
-Random Forest
 
+Step 5: Run Random Forest Classification Models predicting the color(classification) of each SDG for each SIDS
 
 What are the drivers/most important predictors of the status(color) of a SIDS two lowest performing indicators per SDG?
 
 
 Goal 1
 
+Drop Cuba and Singapore to test model accuracy
+
+# ```{r}
+# sdg_report_classifier_data_missRanger_sdg_indicators_cuba_singapore <- sdg_report_classifier_data_missRanger_sdg_indicators %>% 
+#   filter(geo_area_name != "Cuba",
+#          geo_area_name != "Singapore")
+# ```
+
+
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_1_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_1_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_1_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_1_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal1_dash<- randomForest(goal_1_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal1_dash<- randomForest(goal_1_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -403,12 +300,12 @@ ggplot(ImpData_missRanger_rf_goal1_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
 Goal 2 
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_2_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_2_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_2_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_2_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal2_dash<- randomForest(goal_2_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal2_dash<- randomForest(goal_2_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -459,12 +356,12 @@ ggplot(ImpData_missRanger_rf_goal2_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
 Goal 3
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_3_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_3_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_3_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_3_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal3_dash<- randomForest(goal_3_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal3_dash<- randomForest(goal_3_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -516,12 +413,12 @@ ggplot(ImpData_missRanger_rf_goal3_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
 Goal 4 
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_4_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_4_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_4_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_4_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal4_dash<- randomForest(goal_4_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal4_dash<- randomForest(goal_4_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -575,12 +472,12 @@ Goal 5
 
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_5_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_5_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_5_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_5_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal5_dash<- randomForest(goal_5_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal5_dash<- randomForest(goal_5_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -630,12 +527,12 @@ ggplot(ImpData_missRanger_rf_goal5_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
 Goal 6 
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_6_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_6_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_6_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_6_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal6_dash<- randomForest(goal_6_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal6_dash<- randomForest(goal_6_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -689,12 +586,12 @@ ggplot(ImpData_missRanger_rf_goal6_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
 Goal 7 
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_7_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_7_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_7_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_7_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal7_dash<- randomForest(goal_7_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal7_dash<- randomForest(goal_7_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -746,12 +643,12 @@ Goal 8
 
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_8_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_8_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_8_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_8_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal8_dash<- randomForest(goal_8_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal8_dash<- randomForest(goal_8_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -804,12 +701,12 @@ Goal 9
 
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_9_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_9_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_9_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_9_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal9_dash<- randomForest(goal_9_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal9_dash<- randomForest(goal_9_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -862,12 +759,12 @@ ggplot(ImpData_missRanger_rf_goal9_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
 Goal 10 
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_10_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_10_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_10_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_10_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal10_dash<- randomForest(goal_10_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal10_dash<- randomForest(goal_10_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -917,12 +814,12 @@ ggplot(ImpData_missRanger_rf_goal10_dash_highest_mse, aes(x=Var.Names, y=`MeanDe
 Goal 11
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_11_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_11_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_11_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_11_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal11_dash<- randomForest(goal_11_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal11_dash<- randomForest(goal_11_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -975,12 +872,12 @@ ggplot(ImpData_missRanger_rf_goal11_dash_highest_mse, aes(x=Var.Names, y=`MeanDe
 Goal 12 
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_12_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_12_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_12_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_12_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal12_dash<- randomForest(goal_12_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal12_dash<- randomForest(goal_12_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -1032,12 +929,12 @@ ggplot(ImpData_missRanger_rf_goal12_dash_highest_mse, aes(x=Var.Names, y=`MeanDe
 Goal 13
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_13_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_13_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_13_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_13_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal13_dash<- randomForest(goal_13_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal13_dash<- randomForest(goal_13_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -1091,12 +988,12 @@ ggplot(ImpData_missRanger_rf_goal13_dash_highest_mse, aes(x=Var.Names, y=`MeanDe
 Goal 14
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_14_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_14_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_14_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_14_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal14_dash<- randomForest(goal_14_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal14_dash<- randomForest(goal_14_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -1149,12 +1046,12 @@ Goal 15
 
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_15_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_15_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_15_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_15_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal15_dash<- randomForest(goal_15_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal15_dash<- randomForest(goal_15_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -1209,12 +1106,12 @@ Goal 16
 
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_16_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_16_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_16_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_16_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal16_dash<- randomForest(goal_16_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal16_dash<- randomForest(goal_16_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -1267,12 +1164,12 @@ Goal 17
 
 
 ```{r}
-dash_data_sids_missRanger_sdg_indicators$goal_17_dash <- as.factor(dash_data_sids_missRanger_sdg_indicators$goal_17_dash)
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_17_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_17_dash)
 ```
 
 
 ```{r}
-missRanger_rf_goal17_dash<- randomForest(goal_17_dash ~ ., data = dash_data_sids_missRanger_sdg_indicators, 
+missRanger_rf_goal17_dash<- randomForest(goal_17_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators, 
                    importance = TRUE)
 ```
 
@@ -1326,11 +1223,10 @@ Investigating
 
 
 ```{r}
-s <- ggplot(dash_data_sids_missRanger_sdg_indicators, aes(x = 	
-above_ground_biomass_in_forest_tonnes_per_hectare,
-                                                y = rownames(dash_data_sids_missRanger_sdg_indicators), label = row.names(dash_data_sids_missRanger_sdg_indicators))) +
+s <- ggplot(sdg_report_classifier_data_missRanger_sdg_indicators, aes(x = 	
+food_waste_tonnes,
+                                                y = rownames(sdg_report_classifier_data_missRanger_sdg_indicators), label = row.names(sdg_report_classifier_data_missRanger_sdg_indicators))) +
   geom_point()
 
 ggplotly(s)
 ```
-
