@@ -1,5 +1,12 @@
 ---
-title: "random_forest_SDR_2022"
+title: "all_factors_forest"
+author: "Connor Flynn"
+date: "8/9/2022"
+output: html_document
+---
+
+---
+title: "all_factor_forest"
 author: "Connor Flynn"
 date: "8/4/2022"
 output: html_document
@@ -230,14 +237,64 @@ Step 5: Run Random Forest Classification Models predicting the color(classificat
 
 What are the drivers/most important predictors of the status(color) of a SIDS two lowest performing indicators per SDG?
 
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_1_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_1_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_2_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_2_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_3_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_3_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_4_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_4_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_5_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_5_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_6_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_6_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_7_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_7_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_8_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_8_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_9_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_9_dash)
+
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_10_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_10_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_11_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_11_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_12_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_12_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_13_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_13_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_14_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_14_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_15_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_15_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_16_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_16_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators$goal_17_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_17_dash)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Goal 1
 
 
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators$goal_1_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators$goal_1_dash)
-```
 
 
 ```{r}

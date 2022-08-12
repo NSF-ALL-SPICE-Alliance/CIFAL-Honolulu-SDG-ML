@@ -1,0 +1,2639 @@
+---
+title: "isolation_evi"
+author: "Connor Flynn"
+date: "8/9/2022"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(dplyr)
+library(missRanger)
+library(randomForest)
+library(edarf)
+library(janitor)
+library(caret)
+
+options(set.seed(3))
+```
+
+```{r}
+set.seed(3)
+```
+
+
+
+
+Step 1: Read in data that is summarized by taking the most recent year of data for each indicator/SIDS. If there are multiple indicator values for the most recent year/SIDS, the mean of those values is taken.
+
+```{r}
+sdg_indicators <- read_csv(here("most_recent/data_cleaned_and_summarized/sdg_indicators_joined_most_recent.csv"))
+```
+
+
+Step 2: Impute this data using random forest imputation with the missRanger package
+
+Determine how much data we want to impute
+  - Here, I decided that I only want to include columns (indicators) in which at least 40% of the SIDS have data for
+```{r}
+sdg_indicators_less_na <- sdg_indicators[, which(colMeans(!is.na(sdg_indicators)) > 0.4)]
+```
+
+
+Impute using missRanger function (Random Forest Imputation)
+```{r}
+sdg_indicators_missRanger <- missRanger(sdg_indicators_less_na, 
+                                        formula = . ~ ., 
+                                        num.trees = 1000,
+                                        seed = 3,
+                                        returnOOB = TRUE
+                                      )
+```
+
+
+
+Step 3: Read in data from the Sustainable Development Report 2022 for the most recent goal classification(color) for each SIDS/SDG
+
+
+```{r}
+sdg_report_classifier_data <- read_csv(here("data/sdg_data/sustainable_development_report_2022.csv"))
+```
+
+
+
+Clean, Select Classifier Data
+
+```{r}
+sdg_report_classifier_data <- clean_names(sdg_report_classifier_data)
+```
+
+```{r}
+sdg_report_classifier_data <- sdg_report_classifier_data %>%
+     mutate(country = recode(country, 
+                            "Bahamas, The" = 'Bahamas',
+                             "Micronesia, Fed. Sts." = 	"Micronesia_(Federated_States_of)",
+                            "St. Kitts and Nevis" = 	"Saint_Kitts_and_Nevis",
+                            	"St. Lucia" = 	"Saint_Lucia", 
+                            	"St. Vincent and the Grenadines" = "Saint_Vincent_and_the_Grenadines"
+                            
+                            ))
+```
+
+
+
+```{r}
+sdg_report_classifier_data$country <- gsub(" ", "_", sdg_report_classifier_data$country)
+```
+
+```{r}
+sdg_report_classifier_data <- sdg_report_classifier_data %>%
+  rename(geo_area_name = country)
+```
+
+
+```{r}
+sdg_report_classifier_data <- sdg_report_classifier_data %>% 
+  select(geo_area_name, 
+goal_1_dash,
+goal_2_dash,
+goal_3_dash,
+goal_4_dash,
+goal_5_dash,
+goal_6_dash,
+goal_7_dash,
+goal_8_dash,
+goal_9_dash,
+goal_10_dash,
+goal_11_dash,
+goal_12_dash,
+goal_13_dash,
+goal_14_dash,
+goal_15_dash,
+goal_16_dash,
+goal_17_dash)
+```
+
+
+
+Left join to match Sustainable Development Report SIDS(37) with all SIDS(54)
+```{r}
+sdg_report_classifier_data <- left_join(sdg_indicators, sdg_report_classifier_data, by = "geo_area_name")
+```
+
+
+
+
+```{r}
+sdg_report_classifier_data <- sdg_report_classifier_data %>% 
+  select(geo_area_name, 
+goal_1_dash,
+goal_2_dash,
+goal_3_dash,
+goal_4_dash,
+goal_5_dash,
+goal_6_dash,
+goal_7_dash,
+goal_8_dash,
+goal_9_dash,
+goal_10_dash,
+goal_11_dash,
+goal_12_dash,
+goal_13_dash,
+goal_14_dash,
+goal_15_dash,
+goal_16_dash,
+goal_17_dash)
+```
+
+Drop SIDS that were not a part of the 2022 Sustainable Development Report
+```{r}
+sdg_report_classifier_data <- drop_na(sdg_report_classifier_data)
+```
+
+
+
+Step 4: Join Step 1 Data with Step 3 Data
+
+Join SIDS classification data with tier 1 and tier 2 indicator data for 37 SIDS
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators <- left_join(sdg_report_classifier_data, sdg_indicators_missRanger, by = "geo_area_name")
+```
+
+
+Join Isolation Data
+```{r}
+isolation <- read_csv(here("data/sdg_data/isolation_evi.csv"))
+```
+
+```{r}
+isolation <- isolation %>%
+  rename(geo_area_name = Country_EVI)
+```
+
+
+```{r}
+isolation$geo_area_name <- gsub(" ", "_", isolation$geo_area_name)
+```
+
+
+```{r}
+isolation <- isolation %>%
+     mutate(geo_area_name = recode(geo_area_name, 
+                            "Bahama" = 'Bahamas',
+                             "Fed._States_Micronesia" = 	"Micronesia_(Federated_States_of)",
+                            "St._Kitts_and_Nevis" = 	"Saint_Kitts_and_Nevis",
+                            	"St._Vincent_&_Grenadines" = "Saint_Vincent_and_the_Grenadines",
+                            "Antigua_&_Barbuda" = "Antigua_and_Barbuda",
+                            "Sao_Tome_&_Principe" =  "Sao_Tome_and_Principe",
+                            "Cape_Verde" = "Cabo_Verde",
+                            "Dominican_Rep" = "Dominican_Republic"
+                            
+                            ))
+```
+
+
+
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation <- left_join(sdg_report_classifier_data_missRanger_sdg_indicators, isolation, by = "geo_area_name")
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(geo_area_name, ISOL)
+
+# Timor Leste - 575
+# Dominica - 568
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>%                               # Replacing values
+  mutate(ISOL = replace(ISOL, geo_area_name == "Dominica", 568))
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>%                               # Replacing values
+  mutate(ISOL = replace(ISOL, geo_area_name == "Timor-Leste", 575))
+
+```
+
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  remove_rownames %>% 
+  column_to_rownames(var="geo_area_name")
+```
+
+
+Step 5: Run Random Forest Classification Models predicting the color(classification) of each SDG for each SIDS
+
+What are the drivers/most important predictors of the status(color) of a SIDS two lowest performing indicators per SDG?
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_1_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_1_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_2_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_2_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_3_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_3_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_4_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_4_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_5_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_5_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_6_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_6_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_7_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_7_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_8_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_8_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_9_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_9_dash)
+
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_10_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_10_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_11_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_11_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_12_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_12_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_13_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_13_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_14_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_14_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_15_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_15_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_16_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_16_dash)
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_17_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_17_dash)
+
+
+```
+
+Goal 1
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_1_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_1_dash)
+```
+
+
+```{r}
+missRanger_rf_goal1_dash<- randomForest(goal_1_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal1_dash
+```
+
+
+Partial Plot
+
+```{r}
+df_rf <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal1_dash))
+# Get performance meas
+```
+
+
+
+
+
+```{r}
+imp_df <- data.frame(importance(missRanger_rf_goal1_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df <- imp_df %>% 
+  mutate(names = rownames(imp_df)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm <- as.character(imp_df$names)[1:12]
+# Get partial depedence values for top predictors
+pd_df <- partial_dependence(fit = missRanger_rf_goal1_dash,
+                         vars = nm,
+                         data = df_rf)
+                         # n = c(100, 200))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df)
+```
+
+```{r}
+perfectPartialPlot <- function(df, x, y){
+  
+  # Need string for aes_string()
+  centile <- "centile"
+  
+  # Save marginal probabilities as separate data frame
+  vote_prop <- df %>% 
+    select(y) %>% 
+    mutate(row = row_number())
+  
+  # Gather predictor centiles into a single column and join vote_prop
+  pd_tidy <- df %>% 
+    select(x) %>% 
+    gather(x, key = "predictor", value = "centile") %>% 
+    na.omit() %>% 
+    mutate(row = row_number()) %>% 
+    left_join(vote_prop, by = "row")
+  
+  # Create the perfect partial plot
+  ggplot(pd_tidy, aes_string(x = centile, y = y)) +
+    geom_line(lwd = 1.25) +
+    labs(title = "Partial Dependence",
+         x = "",
+         y = paste("Proportion of votes for", y)) +
+    facet_wrap(~predictor, scale = "free") +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+    theme(plot.title = element_text(hjust = 0.5))
+  
+}
+```
+
+```{r}
+perfectPartialPlot(df = pd_df, x = nm, y = "green")
+```
+
+
+
+```{r}
+ImpData_missRanger_rf_goal1_dash <- as.data.frame(importance(missRanger_rf_goal1_dash))
+ImpData_missRanger_rf_goal1_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal1_dash)
+
+
+
+
+
+
+
+
+ImpData_missRanger_rf_goal1_dash_highest_mse <- ImpData_missRanger_rf_goal1_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal1_dash_highest_mse <- ImpData_missRanger_rf_goal1_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal1_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 2 
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_2_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_2_dash)
+```
+
+
+```{r}
+missRanger_rf_goal2_dash<- randomForest(goal_2_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal2_dash
+```
+
+```{r}
+df_rf_2 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal2_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_2 <- data.frame(importance(missRanger_rf_goal2_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_2 <- imp_df_2 %>% 
+  mutate(names = rownames(imp_df_2)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_2 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_2 <- as.character(imp_df_2$names)[4:4]
+# Get partial depedence values for top predictors
+pd_df_2 <- partial_dependence(fit = missRanger_rf_goal2_dash,
+                         vars = nm_2,
+                         data = df_rf_2)
+                         # n = c(100, 200))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_2)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_2, x = nm_2, y = "red")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+ImpData_missRanger_rf_goal2_dash <- as.data.frame(importance(missRanger_rf_goal2_dash))
+ImpData_missRanger_rf_goal2_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal2_dash)
+
+
+
+
+
+
+
+ImpData_missRanger_rf_goal2_dash_highest_mse <- ImpData_missRanger_rf_goal2_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal2_dash_highest_mse <- ImpData_missRanger_rf_goal2_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal2_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+Goal 3
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_3_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_3_dash)
+```
+
+
+```{r}
+missRanger_rf_goal3_dash<- randomForest(goal_3_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal3_dash
+```
+
+
+```{r}
+df_rf_3 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal3_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_3 <- data.frame(importance(missRanger_rf_goal3_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_3 <- imp_df_3 %>% 
+  mutate(names = rownames(imp_df_3)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_3 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_3 <- as.character(imp_df_3$names)[1:8]
+# Get partial depedence values for top predictors
+pd_df_3 <- partial_dependence(fit = missRanger_rf_goal3_dash,
+                         vars = nm_3,
+                         data = df_rf_3)
+                         # n = c(100, 300))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_3)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_3, x = nm_3, y = "red")
+```
+
+
+
+
+
+
+
+
+```{r}
+ImpData_missRanger_rf_goal3_dash <- as.data.frame(importance(missRanger_rf_goal3_dash))
+ImpData_missRanger_rf_goal3_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal3_dash)
+
+
+
+
+
+
+ImpData_missRanger_rf_goal3_dash_highest_mse <- ImpData_missRanger_rf_goal3_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal3_dash_highest_mse <- ImpData_missRanger_rf_goal3_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal3_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 4 
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_4_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_4_dash)
+```
+
+
+```{r}
+missRanger_rf_goal4_dash<- randomForest(goal_4_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal4_dash
+```
+
+```{r}
+df_rf_4 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal4_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_4 <- data.frame(importance(missRanger_rf_goal4_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_4 <- imp_df_4 %>% 
+  mutate(names = rownames(imp_df_4)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_4 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_4 <- as.character(imp_df_4$names)[1:8]
+# Get partial depedence values for top predictors
+pd_df_4 <- partial_dependence(fit = missRanger_rf_goal4_dash,
+                         vars = nm_4,
+                         data = df_rf_4)
+                         # n = c(100, 400))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_4)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_4, x = nm_4, y = "red")
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+ImpData_missRanger_rf_goal4_dash <- as.data.frame(importance(missRanger_rf_goal4_dash))
+ImpData_missRanger_rf_goal4_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal4_dash)
+
+
+
+ImpData_missRanger_rf_goal4_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal4_dash_highest_mse <- ImpData_missRanger_rf_goal4_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal4_dash_highest_mse <- ImpData_missRanger_rf_goal4_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal4_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 5 
+
+
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_5_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_5_dash)
+```
+
+
+```{r}
+missRanger_rf_goal5_dash<- randomForest(goal_5_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal5_dash
+```
+
+
+
+
+```{r}
+df_rf_5 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal5_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_5 <- data.frame(importance(missRanger_rf_goal5_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_5 <- imp_df_5 %>% 
+  mutate(names = rownames(imp_df_5)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_5 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_5 <- as.character(imp_df_5$names)[1:12]
+# Get partial depedence values for top predictors
+pd_df_5 <- partial_dependence(fit = missRanger_rf_goal5_dash,
+                         vars = nm_5,
+                         data = df_rf_5)
+                         # n = c(100, 500))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_5)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_5, x = nm_5, y = "red")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+ImpData_missRanger_rf_goal5_dash <- as.data.frame(importance(missRanger_rf_goal5_dash))
+ImpData_missRanger_rf_goal5_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal5_dash)
+
+
+
+
+
+
+
+
+ImpData_missRanger_rf_goal5_dash_highest_mse <- ImpData_missRanger_rf_goal5_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal5_dash_highest_mse <- ImpData_missRanger_rf_goal5_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal5_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+Goal 6 
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_6_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_6_dash)
+```
+
+
+```{r}
+missRanger_rf_goal6_dash<- randomForest(goal_6_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal6_dash
+```
+
+```{r}
+df_rf_6 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal6_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_6 <- data.frame(importance(missRanger_rf_goal6_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_6 <- imp_df_6 %>% 
+  mutate(names = rownames(imp_df_6)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_6 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_6 <- as.character(imp_df_6$names)[9:9]
+# Get partial depedence values for top predictors
+pd_df_6 <- partial_dependence(fit = missRanger_rf_goal6_dash,
+                         vars = nm_6,
+                         data = df_rf_6)
+                         # n = c(100, 600))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_6)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_6, x = nm_6, y = "red")
+```
+
+
+
+
+
+
+
+
+```{r}
+ImpData_missRanger_rf_goal6_dash <- as.data.frame(importance(missRanger_rf_goal6_dash))
+ImpData_missRanger_rf_goal6_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal6_dash)
+
+
+
+ImpData_missRanger_rf_goal6_dash_highest_mse <- ImpData_missRanger_rf_goal6_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal6_dash_highest_mse <- ImpData_missRanger_rf_goal6_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal6_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.5) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+
+
+Goal 7 
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_7_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_7_dash)
+```
+
+
+```{r}
+missRanger_rf_goal7_dash<- randomForest(goal_7_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal7_dash
+```
+```{r}
+df_rf_7 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal7_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_7 <- data.frame(importance(missRanger_rf_goal7_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_7 <- imp_df_7 %>% 
+  mutate(names = rownames(imp_df_7)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_7 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_7 <- as.character(imp_df_7$names)[1:8]
+# Get partial depedence values for top predictors
+pd_df_7 <- partial_dependence(fit = missRanger_rf_goal7_dash,
+                         vars = nm_7,
+                         data = df_rf_7)
+                         # n = c(100, 700))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_7)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_7, x = nm_7, y = "red")
+```
+
+```{r}
+ImpData_missRanger_rf_goal7_dash <- as.data.frame(importance(missRanger_rf_goal7_dash))
+ImpData_missRanger_rf_goal7_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal7_dash)
+
+
+
+ImpData_missRanger_rf_goal7_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal7_dash_highest_mse <- ImpData_missRanger_rf_goal7_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal7_dash_highest_mse <- ImpData_missRanger_rf_goal7_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal7_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+Goal 8 
+
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_8_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_8_dash)
+```
+
+
+```{r}
+missRanger_rf_goal8_dash<- randomForest(goal_8_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal8_dash
+```
+
+
+```{r}
+df_rf_8 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal8_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_8 <- data.frame(importance(missRanger_rf_goal8_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_8 <- imp_df_8 %>% 
+  mutate(names = rownames(imp_df_8)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_8 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_8 <- as.character(imp_df_8$names)[10:10]
+# Get partial depedence values for top predictors
+pd_df_8 <- partial_dependence(fit = missRanger_rf_goal8_dash,
+                         vars = nm_8,
+                         data = df_rf_8)
+                         # n = c(100, 800))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_8)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_8, x = nm_8, y = "grey")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+ImpData_missRanger_rf_goal8_dash <- as.data.frame(importance(missRanger_rf_goal8_dash))
+ImpData_missRanger_rf_goal8_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal8_dash)
+
+
+
+
+
+
+
+
+ImpData_missRanger_rf_goal8_dash_highest_mse <- ImpData_missRanger_rf_goal8_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal8_dash_highest_mse <- ImpData_missRanger_rf_goal8_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal8_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 9 
+
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_9_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_9_dash)
+```
+
+
+```{r}
+missRanger_rf_goal9_dash<- randomForest(goal_9_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal9_dash
+```
+
+
+```{r}
+df_rf_9 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal9_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_9 <- data.frame(importance(missRanger_rf_goal9_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_9 <- imp_df_9 %>% 
+  mutate(names = rownames(imp_df_9)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_9 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_9 <- as.character(imp_df_9$names)[1:9]
+# Get partial depedence values for top predictors
+pd_df_9 <- partial_dependence(fit = missRanger_rf_goal9_dash,
+                         vars = nm_9,
+                         data = df_rf_9)
+                         # n = c(100, 900))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_9)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_9, x = nm_9, y = "red")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+ImpData_missRanger_rf_goal9_dash <- as.data.frame(importance(missRanger_rf_goal9_dash))
+ImpData_missRanger_rf_goal9_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal9_dash)
+
+
+
+
+
+
+
+ImpData_missRanger_rf_goal9_dash_highest_mse <- ImpData_missRanger_rf_goal9_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal9_dash_highest_mse <- ImpData_missRanger_rf_goal9_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal9_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+```{r}
+getTree(missRanger_rf_goal9_dash, labelVar = TRUE)
+```
+
+
+Goal 10 
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_10_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_10_dash)
+```
+
+
+```{r}
+missRanger_rf_goal10_dash<- randomForest(goal_10_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal10_dash
+```
+
+
+
+
+```{r}
+df_rf_10 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal10_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_10 <- data.frame(importance(missRanger_rf_goal10_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_10 <- imp_df_10 %>% 
+  mutate(names = rownames(imp_df_10)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_10 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_10 <- as.character(imp_df_10$names)[1:12]
+# Get partial depedence values for top predictors
+pd_df_10 <- partial_dependence(fit = missRanger_rf_goal10_dash,
+                         vars = nm_10,
+                         data = df_rf_10)
+                         # n = c(100, 1000))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_10)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_10, x = nm_10, y = "grey")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+ImpData_missRanger_rf_goal10_dash <- as.data.frame(importance(missRanger_rf_goal10_dash))
+ImpData_missRanger_rf_goal10_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal10_dash)
+
+
+
+ImpData_missRanger_rf_goal10_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal10_dash_highest_mse <- ImpData_missRanger_rf_goal10_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal10_dash_highest_mse <- ImpData_missRanger_rf_goal10_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal10_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+Goal 11
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_11_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_11_dash)
+```
+
+
+```{r}
+missRanger_rf_goal11_dash<- randomForest(goal_11_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal11_dash
+```
+
+
+```{r}
+df_rf_11 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal11_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_11 <- data.frame(importance(missRanger_rf_goal11_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_11 <- imp_df_11 %>% 
+  mutate(names = rownames(imp_df_11)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_11 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_11 <- as.character(imp_df_11$names)[1:12]
+# Get partial depedence values for top predictors
+pd_df_11 <- partial_dependence(fit = missRanger_rf_goal11_dash,
+                         vars = nm_11,
+                         data = df_rf_11)
+                         # n = c(100, 1100))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_11)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_11, x = nm_11, y = "grey")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+ImpData_missRanger_rf_goal11_dash <- as.data.frame(importance(missRanger_rf_goal11_dash))
+ImpData_missRanger_rf_goal11_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal11_dash)
+
+
+
+ImpData_missRanger_rf_goal11_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal11_dash_highest_mse <- ImpData_missRanger_rf_goal11_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal11_dash_highest_mse <- ImpData_missRanger_rf_goal11_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal11_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+
+Goal 12 
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_12_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_12_dash)
+```
+
+
+```{r}
+missRanger_rf_goal12_dash<- randomForest(goal_12_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE, ntree = 500)
+```
+
+
+```{r}
+missRanger_rf_goal12_dash
+```
+
+
+
+```{r}
+df_rf_12 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal12_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_12 <- data.frame(importance(missRanger_rf_goal12_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_12 <- imp_df_12 %>% 
+  mutate(names = rownames(imp_df_12)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_12 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_12 <- as.character(imp_df_12$names)[1:12]
+# Get partial depedence values for top predictors
+pd_df_12 <- partial_dependence(fit = missRanger_rf_goal12_dash,
+                         vars = nm_12,
+                         data = df_rf_12)
+                         # n = c(100, 1200))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_12)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_12, x = nm_12, y = "orange")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+ImpData_missRanger_rf_goal12_dash <- as.data.frame(importance(missRanger_rf_goal12_dash))
+ImpData_missRanger_rf_goal12_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal12_dash)
+
+
+
+ImpData_missRanger_rf_goal12_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal12_dash_highest_mse <- ImpData_missRanger_rf_goal12_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal12_dash_highest_mse <- ImpData_missRanger_rf_goal12_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal12_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 13
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_13_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_13_dash)
+```
+
+
+```{r}
+missRanger_rf_goal13_dash<- randomForest(goal_13_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal13_dash
+```
+
+
+```{r}
+df_rf_13 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal13_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_13 <- data.frame(importance(missRanger_rf_goal13_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_13 <- imp_df_13 %>% 
+  mutate(names = rownames(imp_df_13)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_13 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_13 <- as.character(imp_df_13$names)[1:12]
+# Get partial depedence values for top predictors
+pd_df_13 <- partial_dependence(fit = missRanger_rf_goal13_dash,
+                         vars = nm_13,
+                         data = df_rf_13)
+                         # n = c(100, 1300))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_13)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_13, x = nm_13, y = "yellow")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+ImpData_missRanger_rf_goal13_dash <- as.data.frame(importance(missRanger_rf_goal13_dash))
+ImpData_missRanger_rf_goal13_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal13_dash)
+
+
+
+ImpData_missRanger_rf_goal13_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal13_dash_highest_mse <- ImpData_missRanger_rf_goal13_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal13_dash_highest_mse <- ImpData_missRanger_rf_goal13_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal13_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+
+
+Goal 14
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_14_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_14_dash)
+```
+
+
+```{r}
+missRanger_rf_goal14_dash<- randomForest(goal_14_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal14_dash
+```
+
+
+```{r}
+df_rf_14 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal14_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_14 <- data.frame(importance(missRanger_rf_goal14_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_14 <- imp_df_14 %>% 
+  mutate(names = rownames(imp_df_14)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_14 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_14 <- as.character(imp_df_14$names)[1:12]
+# Get partial depedence values for top predictors
+pd_df_14 <- partial_dependence(fit = missRanger_rf_goal14_dash,
+                         vars = nm_14,
+                         data = df_rf_14)
+                         # n = c(100, 1400))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_14)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_14, x = nm_14, y = "yellow")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+ImpData_missRanger_rf_goal14_dash <- as.data.frame(importance(missRanger_rf_goal14_dash))
+ImpData_missRanger_rf_goal14_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal14_dash)
+
+
+
+ImpData_missRanger_rf_goal14_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal14_dash_highest_mse <- ImpData_missRanger_rf_goal14_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 14)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal14_dash_highest_mse <- ImpData_missRanger_rf_goal14_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal14_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 15
+
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_15_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_15_dash)
+```
+
+
+```{r}
+missRanger_rf_goal15_dash<- randomForest(goal_15_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal15_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal15_dash <- as.data.frame(importance(missRanger_rf_goal15_dash))
+ImpData_missRanger_rf_goal15_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal15_dash)
+
+
+
+ImpData_missRanger_rf_goal15_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal15_dash_highest_mse <- ImpData_missRanger_rf_goal15_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal15_dash_highest_mse <- ImpData_missRanger_rf_goal15_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal15_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+
+
+Goal 16
+
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_16_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_16_dash)
+```
+
+
+```{r}
+missRanger_rf_goal16_dash<- randomForest(goal_16_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal16_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal16_dash <- as.data.frame(importance(missRanger_rf_goal16_dash))
+ImpData_missRanger_rf_goal16_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal16_dash)
+
+
+
+
+
+
+
+ImpData_missRanger_rf_goal16_dash_highest_mse <- ImpData_missRanger_rf_goal16_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal16_dash_highest_mse <- ImpData_missRanger_rf_goal16_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal16_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+Goal 17
+
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_17_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_17_dash)
+```
+
+
+```{r}
+missRanger_rf_goal17_dash<- randomForest(goal_17_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal17_dash
+```
+
+
+```{r}
+ImpData_missRanger_rf_goal17_dash <- as.data.frame(importance(missRanger_rf_goal17_dash))
+ImpData_missRanger_rf_goal17_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal17_dash)
+
+
+
+ImpData_missRanger_rf_goal17_dash
+
+
+
+
+
+ImpData_missRanger_rf_goal17_dash_highest_mse <- ImpData_missRanger_rf_goal17_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal17_dash_highest_mse <- ImpData_missRanger_rf_goal17_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal17_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+
+Investigating
+
+
+```{r}
+s <- ggplot(sdg_report_classifier_data_missRanger_sdg_indicators_isolation, aes(x = 	
+renewable_energy_share_in_the_total_final_energy_consumption_percent,
+                                                y = rownames(sdg_report_classifier_data_missRanger_sdg_indicators_isolation)), label = rownames(sdg_report_classifier_data_missRanger_sdg_indicators_isolation)) +
+  geom_point()
+
+ggplotly(s)
+```
+
+
+
+Write vs Wrong Random Forest Predictions
+
+
+```{r}
+goal_1_predicted <- as.data.frame(missRanger_rf_goal1_dash$predicted)
+
+goal_1_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_1_dash)
+
+goal_1_actual_vs_predicted <- merge(goal_1_predicted, goal_1_actual, by = 0)
+
+goal_1_actual_vs_predicted <- goal_1_actual_vs_predicted %>%
+  rename(goal_1_predicted = "missRanger_rf_goal1_dash$predicted")
+
+goal_1_actual_vs_predicted <- goal_1_actual_vs_predicted %>% 
+  mutate(goal_1_match = ifelse(goal_1_predicted == goal_1_dash, 'yes', 'no'))
+```
+
+
+```{r}
+goal_2_predicted <- as.data.frame(missRanger_rf_goal2_dash$predicted)
+
+goal_2_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_2_dash)
+
+goal_2_actual_vs_predicted <- merge(goal_2_predicted, goal_2_actual, by = 0)
+
+goal_2_actual_vs_predicted <- goal_2_actual_vs_predicted %>%
+  rename(goal_2_predicted = "missRanger_rf_goal2_dash$predicted")
+
+goal_2_actual_vs_predicted <- goal_2_actual_vs_predicted %>% 
+  mutate(goal_2_match = ifelse(goal_2_predicted == goal_2_dash, 'yes', 'no'))
+```
+
+
+```{r}
+goal_3_predicted <- as.data.frame(missRanger_rf_goal3_dash$predicted)
+
+goal_3_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_3_dash)
+
+goal_3_actual_vs_predicted <- merge(goal_3_predicted, goal_3_actual, by = 0)
+
+goal_3_actual_vs_predicted <- goal_3_actual_vs_predicted %>%
+  rename(goal_3_predicted = "missRanger_rf_goal3_dash$predicted")
+
+goal_3_actual_vs_predicted <- goal_3_actual_vs_predicted %>% 
+  mutate(goal_3_match = ifelse(goal_3_predicted == goal_3_dash, 'yes', 'no'))
+```
+
+```{r}
+goal_4_predicted <- as.data.frame(missRanger_rf_goal4_dash$predicted)
+
+goal_4_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_4_dash)
+
+goal_4_actual_vs_predicted <- merge(goal_4_predicted, goal_4_actual, by = 0)
+
+goal_4_actual_vs_predicted <- goal_4_actual_vs_predicted %>%
+  rename(goal_4_predicted = "missRanger_rf_goal4_dash$predicted")
+
+goal_4_actual_vs_predicted <- goal_4_actual_vs_predicted %>% 
+  mutate(goal_4_match = ifelse(goal_4_predicted == goal_4_dash, 'yes', 'no'))
+```
+
+
+```{r}
+goal_5_predicted <- as.data.frame(missRanger_rf_goal5_dash$predicted)
+
+goal_5_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_5_dash)
+
+goal_5_actual_vs_predicted <- merge(goal_5_predicted, goal_5_actual, by = 0)
+
+goal_5_actual_vs_predicted <- goal_5_actual_vs_predicted %>%
+  rename(goal_5_predicted = "missRanger_rf_goal5_dash$predicted")
+
+goal_5_actual_vs_predicted <- goal_5_actual_vs_predicted %>% 
+  mutate(goal_5_match = ifelse(goal_5_predicted == goal_5_dash, 'yes', 'no'))
+```
+
+
+```{r}
+goal_6_predicted <- as.data.frame(missRanger_rf_goal6_dash$predicted)
+
+goal_6_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_6_dash)
+
+goal_6_actual_vs_predicted <- merge(goal_6_predicted, goal_6_actual, by = 0)
+
+goal_6_actual_vs_predicted <- goal_6_actual_vs_predicted %>%
+  rename(goal_6_predicted = "missRanger_rf_goal6_dash$predicted")
+
+goal_6_actual_vs_predicted <- goal_6_actual_vs_predicted %>% 
+  mutate(goal_6_match = ifelse(goal_6_predicted == goal_6_dash, 'yes', 'no'))
+```
+
+
+
+```{r}
+goal_7_predicted <- as.data.frame(missRanger_rf_goal7_dash$predicted)
+
+goal_7_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_7_dash)
+
+goal_7_actual_vs_predicted <- merge(goal_7_predicted, goal_7_actual, by = 0)
+
+goal_7_actual_vs_predicted <- goal_7_actual_vs_predicted %>%
+  rename(goal_7_predicted = "missRanger_rf_goal7_dash$predicted")
+
+goal_7_actual_vs_predicted <- goal_7_actual_vs_predicted %>% 
+  mutate(goal_7_match = ifelse(goal_7_predicted == goal_7_dash, 'yes', 'no'))
+
+
+```
+
+
+
+
+```{r}
+goal_8_predicted <- as.data.frame(missRanger_rf_goal8_dash$predicted)
+
+goal_8_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_8_dash)
+
+goal_8_actual_vs_predicted <- merge(goal_8_predicted, goal_8_actual, by = 0)
+
+goal_8_actual_vs_predicted <- goal_8_actual_vs_predicted %>%
+  rename(goal_8_predicted = "missRanger_rf_goal8_dash$predicted")
+
+goal_8_actual_vs_predicted <- goal_8_actual_vs_predicted %>% 
+  mutate(goal_8_match = ifelse(goal_8_predicted == goal_8_dash, 'yes', 'no'))
+```
+
+
+```{r}
+goal_9_predicted <- as.data.frame(missRanger_rf_goal9_dash$predicted)
+
+goal_9_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_9_dash)
+
+goal_9_actual_vs_predicted <- merge(goal_9_predicted, goal_9_actual, by = 0)
+
+goal_9_actual_vs_predicted <- goal_9_actual_vs_predicted %>%
+  rename(goal_9_predicted = "missRanger_rf_goal9_dash$predicted")
+
+goal_9_actual_vs_predicted <- goal_9_actual_vs_predicted %>% 
+  mutate(goal_9_match = ifelse(goal_9_predicted == goal_9_dash, 'yes', 'no'))
+```
+
+
+```{r}
+goal_10_predicted <- as.data.frame(missRanger_rf_goal10_dash$predicted)
+
+goal_10_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_10_dash)
+
+goal_10_actual_vs_predicted <- merge(goal_10_predicted, goal_10_actual, by = 0)
+
+goal_10_actual_vs_predicted <- goal_10_actual_vs_predicted %>%
+  rename(goal_10_predicted = "missRanger_rf_goal10_dash$predicted")
+
+goal_10_actual_vs_predicted <- goal_10_actual_vs_predicted %>% 
+  mutate(goal_10_match = ifelse(goal_10_predicted == goal_10_dash, 'yes', 'no'))
+```
+
+```{r}
+goal_11_predicted <- as.data.frame(missRanger_rf_goal11_dash$predicted)
+
+goal_11_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_11_dash)
+
+goal_11_actual_vs_predicted <- merge(goal_11_predicted, goal_11_actual, by = 0)
+
+goal_11_actual_vs_predicted <- goal_11_actual_vs_predicted %>%
+  rename(goal_11_predicted = "missRanger_rf_goal11_dash$predicted")
+
+goal_11_actual_vs_predicted <- goal_11_actual_vs_predicted %>% 
+  mutate(goal_11_match = ifelse(goal_11_predicted == goal_11_dash, 'yes', 'no'))
+```
+
+
+```{r}
+goal_12_predicted <- as.data.frame(missRanger_rf_goal12_dash$predicted)
+
+goal_12_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_12_dash)
+
+goal_12_actual_vs_predicted <- merge(goal_12_predicted, goal_12_actual, by = 0)
+
+goal_12_actual_vs_predicted <- goal_12_actual_vs_predicted %>%
+  rename(goal_12_predicted = "missRanger_rf_goal12_dash$predicted")
+
+goal_12_actual_vs_predicted <- goal_12_actual_vs_predicted %>% 
+  mutate(goal_12_match = ifelse(goal_12_predicted == goal_12_dash, 'yes', 'no'))
+```
+
+
+```{r}
+goal_13_predicted <- as.data.frame(missRanger_rf_goal13_dash$predicted)
+
+goal_13_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_13_dash)
+
+goal_13_actual_vs_predicted <- merge(goal_13_predicted, goal_13_actual, by = 0)
+
+goal_13_actual_vs_predicted <- goal_13_actual_vs_predicted %>%
+  rename(goal_13_predicted = "missRanger_rf_goal13_dash$predicted")
+
+goal_13_actual_vs_predicted <- goal_13_actual_vs_predicted %>% 
+  mutate(goal_13_match = ifelse(goal_13_predicted == goal_13_dash, 'yes', 'no'))
+```
+
+
+```{r}
+goal_14_predicted <- as.data.frame(missRanger_rf_goal14_dash$predicted)
+
+goal_14_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_14_dash)
+
+goal_14_actual_vs_predicted <- merge(goal_14_predicted, goal_14_actual, by = 0)
+
+goal_14_actual_vs_predicted <- goal_14_actual_vs_predicted %>%
+  rename(goal_14_predicted = "missRanger_rf_goal14_dash$predicted")
+
+goal_14_actual_vs_predicted <- goal_14_actual_vs_predicted %>% 
+  mutate(goal_14_match = ifelse(goal_14_predicted == goal_14_dash, 'yes', 'no'))
+```
+
+
+
+```{r}
+goal_15_predicted <- as.data.frame(missRanger_rf_goal15_dash$predicted)
+
+goal_15_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_15_dash)
+
+goal_15_actual_vs_predicted <- merge(goal_15_predicted, goal_15_actual, by = 0)
+
+goal_15_actual_vs_predicted <- goal_15_actual_vs_predicted %>%
+  rename(goal_15_predicted = "missRanger_rf_goal15_dash$predicted")
+
+goal_15_actual_vs_predicted <- goal_15_actual_vs_predicted %>% 
+  mutate(goal_15_match = ifelse(goal_15_predicted == goal_15_dash, 'yes', 'no'))
+```
+
+
+```{r}
+goal_16_predicted <- as.data.frame(missRanger_rf_goal16_dash$predicted)
+
+goal_16_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_16_dash)
+
+goal_16_actual_vs_predicted <- merge(goal_16_predicted, goal_16_actual, by = 0)
+
+goal_16_actual_vs_predicted <- goal_16_actual_vs_predicted %>%
+  rename(goal_16_predicted = "missRanger_rf_goal16_dash$predicted")
+
+goal_16_actual_vs_predicted <- goal_16_actual_vs_predicted %>% 
+  mutate(goal_16_match = ifelse(goal_16_predicted == goal_16_dash, 'yes', 'no'))
+```
+
+
+```{r}
+goal_17_predicted <- as.data.frame(missRanger_rf_goal17_dash$predicted)
+
+goal_17_actual <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(goal_17_dash)
+
+goal_17_actual_vs_predicted <- merge(goal_17_predicted, goal_17_actual, by = 0)
+
+goal_17_actual_vs_predicted <- goal_17_actual_vs_predicted %>%
+  rename(goal_17_predicted = "missRanger_rf_goal17_dash$predicted")
+
+goal_17_actual_vs_predicted <- goal_17_actual_vs_predicted %>% 
+  mutate(goal_17_match = ifelse(goal_17_predicted == goal_17_dash, 'yes', 'no'))
+```
+
+
+
+```{r}
+df_list <- list(goal_1_actual_vs_predicted,
+                goal_2_actual_vs_predicted,
+                goal_3_actual_vs_predicted,
+                goal_4_actual_vs_predicted,
+                goal_5_actual_vs_predicted,
+                goal_6_actual_vs_predicted,
+                goal_7_actual_vs_predicted,
+                goal_8_actual_vs_predicted,
+                goal_9_actual_vs_predicted,
+                goal_10_actual_vs_predicted,
+                goal_11_actual_vs_predicted,
+                goal_12_actual_vs_predicted,
+                goal_13_actual_vs_predicted,
+                goal_14_actual_vs_predicted,
+                goal_15_actual_vs_predicted,
+                goal_16_actual_vs_predicted,
+                goal_17_actual_vs_predicted)
+```
+
+
+
+
+```{r}
+
+#merge all data frames in list
+sdg_predicted_vs_actual <- Reduce(function(x, y) merge(x, y, all=TRUE), df_list)
+```
+
+
+```{r}
+sdg_predicted_vs_actual <- sdg_predicted_vs_actual %>% 
+  mutate(no_count = apply(sdg_predicted_vs_actual, 1, function(x) length(which(x=="no"))))
+
+```
+
+
+```{r}
+sdg_predicted_vs_actual <- sdg_predicted_vs_actual %>%
+  rename(geo_area_name = "Row.names")
+```
+
+```{r}
+sdg_predicted_vs_actual$geo_area_name <- as.character(sdg_predicted_vs_actual$geo_area_name)
+```
+
+
+```{r}
+ggplot(data = sdg_predicted_vs_actual, aes(x = no_count, 
+                                           y = geo_area_name)) +
+  geom_col() + 
+  theme_minimal()
+```
+
+
+```{r}
+sdg_actual_classifier_data <- sdg_predicted_vs_actual %>% 
+  select(geo_area_name, 
+goal_1_dash,
+goal_2_dash,
+goal_3_dash,
+goal_4_dash,
+goal_5_dash,
+goal_6_dash,
+goal_7_dash,
+goal_8_dash,
+goal_9_dash,
+goal_10_dash,
+goal_11_dash,
+goal_12_dash,
+goal_13_dash,
+goal_14_dash,
+goal_15_dash,
+goal_16_dash,
+goal_17_dash)
+```
+
+
+
+```{r}
+sdg_actual_classifier_data <- sdg_actual_classifier_data %>% 
+  mutate(green_count = apply(sdg_actual_classifier_data, 1, function(x) length(which(x=="green"))))
+
+
+sdg_actual_classifier_data <- sdg_actual_classifier_data %>% 
+  mutate(red_count = apply(sdg_actual_classifier_data, 1, function(x) length(which(x=="red"))))
+
+sdg_actual_classifier_data <- sdg_actual_classifier_data %>% 
+  mutate(yellow_count = apply(sdg_actual_classifier_data, 1, function(x) length(which(x=="yellow"))))
+
+sdg_actual_classifier_data <- sdg_actual_classifier_data %>% 
+  mutate(orange_count = apply(sdg_actual_classifier_data, 1, function(x) length(which(x=="orange"))))
+
+sdg_actual_classifier_data <- sdg_actual_classifier_data %>% 
+  mutate(grey_count = apply(sdg_actual_classifier_data, 1, function(x) length(which(x=="grey"))))
+```
+
+
+```{r}
+sdg_actual_classifier_data_longer <- sdg_actual_classifier_data %>% 
+  select(geo_area_name, 
+         green_count,
+         yellow_count, 
+         orange_count,
+         red_count,
+         grey_count)
+```
+
+
+```{r}
+sdg_actual_classifier_data_longer <- sdg_actual_classifier_data_longer %>% 
+  pivot_longer(!geo_area_name, names_to = "Color", values_to = "Count")
+  
+```
+
+```{r}
+ggplot(data = sdg_actual_classifier_data_longer, aes(fill = Color, 
+                                                     y = geo_area_name, 
+                                                     x = Count)) + 
+  geom_col(stat = 'identity') + 
+  theme_bw() +
+  scale_fill_manual(values = c("#20854EFF", "#80796BFF", "#CC8214FF", "#A73030FF", "#EFC000FF" ))
+```
+
+```{r}
+sdg_predicted_classifier_data <- sdg_predicted_vs_actual %>% 
+  select(geo_area_name, 
+goal_1_predicted,
+goal_2_predicted,
+goal_3_predicted,
+goal_4_predicted,
+goal_5_predicted,
+goal_6_predicted,
+goal_7_predicted,
+goal_8_predicted,
+goal_9_predicted,
+goal_10_predicted,
+goal_11_predicted,
+goal_12_predicted,
+goal_13_predicted,
+goal_14_predicted,
+goal_15_predicted,
+goal_16_predicted,
+goal_17_predicted)
+```
+
+
+
+```{r}
+sdg_predicted_classifier_data <- sdg_predicted_classifier_data %>% 
+  mutate(green_count = apply(sdg_predicted_classifier_data, 1, function(x) length(which(x=="green"))))
+
+
+sdg_predicted_classifier_data <- sdg_predicted_classifier_data %>% 
+  mutate(red_count = apply(sdg_predicted_classifier_data, 1, function(x) length(which(x=="red"))))
+
+sdg_predicted_classifier_data <- sdg_predicted_classifier_data %>% 
+  mutate(yellow_count = apply(sdg_predicted_classifier_data, 1, function(x) length(which(x=="yellow"))))
+
+sdg_predicted_classifier_data <- sdg_predicted_classifier_data %>% 
+  mutate(orange_count = apply(sdg_predicted_classifier_data, 1, function(x) length(which(x=="orange"))))
+
+sdg_predicted_classifier_data <- sdg_predicted_classifier_data %>% 
+  mutate(grey_count = apply(sdg_predicted_classifier_data, 1, function(x) length(which(x=="grey"))))
+```
+
+
+```{r}
+sdg_predicted_classifier_datalonger <- sdg_predicted_classifier_data %>% 
+  select(geo_area_name, 
+         green_count,
+         yellow_count, 
+         orange_count,
+         red_count,
+         grey_count)
+```
+
+
+```{r}
+sdg_predicted_classifier_datalonger <- sdg_predicted_classifier_datalonger %>% 
+  pivot_longer(!geo_area_name, names_to = "Color", values_to = "Count")
+  
+```
+
+```{r}
+ggplot(data = sdg_predicted_classifier_datalonger, aes(fill = Color, 
+                                                     y = geo_area_name, 
+                                                     x = Count)) + 
+  geom_col() + 
+  theme_bw() +
+  scale_fill_manual(values = c("#20854EFF", "#80796BFF", "#CC8214FF", "#A73030FF", "#EFC000FF" ))
+```
+
+

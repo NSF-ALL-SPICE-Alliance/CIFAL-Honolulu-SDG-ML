@@ -1,0 +1,140 @@
+---
+title: "partial_plot_test"
+author: "Connor Flynn"
+date: "8/11/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+#load libraries
+if (!require(librarian)){
+  install.packages("librarian")
+  library(librarian)
+}
+
+librarian::shelf(tidyverse,
+                 randomForest,
+                 mlbench,
+                 caret,
+                 edarf)
+
+
+
+options(set.seed(3))
+options(scipen = 99)
+```
+
+
+
+```{r}
+data("Sonar")
+df<-Sonar
+rm(Sonar)
+# Clean up variable names (becuz I'm a bit OCD)
+df <- df %>% rename(V01 = V1, V02 = V2, V03 = V3, V04 = V4, 
+                    V05 = V5, V06 = V6, V07 = V7, V08 = V8,
+                    V09 = V9)
+```
+
+
+```{r}
+# Get minimum class frequency
+min <- min(table(df$Class))
+set.seed(223)
+df_rf <- df %>% na.omit()
+fit_rf <- randomForest(data = df_rf, 
+                       Class ~ .,
+                       ntree = 500,
+                       importance = TRUE,
+                       sampsize = c(min, min))
+```
+
+```{r}
+df_rf <- df_rf %>% 
+  mutate(predicted = predict(fit_rf))
+# Get performance measures
+confusionMatrix(df_rf$predicted, df_rf$Class, positive = "R")
+```
+
+
+```{r}
+imp_df <- data.frame(importance(fit_rf, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df <- imp_df %>% 
+  mutate(names = rownames(imp_df)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm <- as.character(imp_df$names)[1:10]
+# Get partial depedence values for top predictors
+pd_df <- partial_dependence(fit = fit_rf,
+                         vars = nm,
+                         data = df_rf,
+                         n = c(100, 200))
+```
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df)
+```
+
+
+
+
+
+
+```{r}
+perfectPartialPlot <- function(df, x, y){
+  
+  # Need string for aes_string()
+  centile <- "centile"
+  
+  # Save marginal probabilities as separate data frame
+  vote_prop <- df %>% 
+    select(y) %>% 
+    mutate(row = row_number())
+  
+  # Gather predictor centiles into a single column and join vote_prop
+  pd_tidy <- df %>% 
+    select(x) %>% 
+    gather(x, key = "predictor", value = "centile") %>% 
+    na.omit() %>% 
+    mutate(row = row_number()) %>% 
+    left_join(vote_prop, by = "row")
+  
+  # Create the perfect partial plot
+  ggplot(pd_tidy, aes_string(x = centile, y = y)) +
+    geom_line(lwd = 1.25) +
+    labs(title = "Partial Dependence",
+         x = "",
+         y = paste("Proportion of votes for", y)) +
+    facet_wrap(~predictor, scale = "free") +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+    theme(plot.title = element_text(hjust = 0.5))
+  
+}
+```
+
+```{r}
+perfectPartialPlot(df = pd_df, x = nm, y = "R")
+```
+
+
