@@ -141,6 +141,45 @@ write_csv(goal16_wider, here("./most_recent/data_cleaned_and_summarized/goal16_m
 ```
 
 
+```{r}
+goal16_wider_detainees <- goal16_wider %>% 
+  select(geo_area_name, unsentenced_detainees_as_a_proportion_of_overall_prison_population_percent)
+  
+```
+
+
+```{r}
+goal16_wider_detainees_plot <- ggplot(data = goal16_wider_detainees, aes(x = unsentenced_detainees_as_a_proportion_of_overall_prison_population_percent, y =geo_area_name)) +
+  geom_bar(stat = "identity")
+```
+
+
+```{r}
+# select columns 
+goal16_wider_people_feeling_safe_walking_alone <- goal16_wider %>% 
+  select(geo_area_name, proportion_of_population_that_feel_safe_walking_alone_around_the_area_they_live_percent)
+
+```
+
+```{r}
+# plot 
+goal16_wider_walking_alone_plot <- ggplot(data = goal16_wider_people_feeling_safe_walking_alone, aes(x = proportion_of_population_that_feel_safe_walking_alone_around_the_area_they_live_percent, y = geo_area_name)) +
+  geom_bar(stat = "identity")
+
+
+```
+
+```{r}
+goal16_wider_walking_alone_plot
+```
+
+
+
+```{r}
+goal16_wider_detainees_plot
+```
+
+
 Plot most recent data 
 
 ```{r}

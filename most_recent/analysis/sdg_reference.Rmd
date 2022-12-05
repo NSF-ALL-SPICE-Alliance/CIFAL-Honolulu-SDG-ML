@@ -1,0 +1,345 @@
+---
+title: "sdg_reference"
+author: "Connor Flynn"
+date: "8/15/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(dplyr)
+library(missRanger)
+library(randomForest)
+library(edarf)
+library(janitor)
+library(caret)
+library(plot.matrix)
+
+options(set.seed(3))
+```
+
+Step 1: Read in data that is summarized by taking the most recent year of data for each indicator/SIDS. If there are multiple indicator values for the most recent year/SIDS, the mean of those values is taken.
+
+```{r}
+sdg_indicators <- read_csv(here("most_recent/data_cleaned_and_summarized/sdg_indicators_joined_most_recent.csv"))
+```
+
+
+Step 2: Impute this data using random forest imputation with the missRanger package
+
+Determine how much data we want to impute
+  - Here, I decided that I only want to include columns (indicators) in which at least 40% of the SIDS have data for
+```{r}
+sdg_indicators_less_na <- sdg_indicators[, which(colMeans(!is.na(sdg_indicators)) > 0.4)]
+```
+
+
+Impute using missRanger function (Random Forest Imputation)
+```{r}
+sdg_indicators_missRanger <- missRanger(sdg_indicators_less_na, 
+                                        formula = . ~ ., 
+                                        num.trees = 1000,
+                                        seed = 3,
+                                        returnOOB = TRUE
+                                      )
+```
+
+
+
+Step 3: Read in data from the Sustainable Development Report 2022 for the most recent goal classification(color) for each SIDS/SDG
+
+
+```{r}
+sdg_report_classifier_data <- read_csv(here("data/sdg_data/sustainable_development_report_2022.csv"))
+```
+
+
+
+Clean, Select Classifier Data
+
+```{r}
+sdg_report_classifier_data <- clean_names(sdg_report_classifier_data)
+```
+
+```{r}
+sdg_report_classifier_data <- sdg_report_classifier_data %>%
+     mutate(country = recode(country, 
+                            "Bahamas, The" = 'Bahamas',
+                             "Micronesia, Fed. Sts." = 	"Micronesia_(Federated_States_of)",
+                            "St. Kitts and Nevis" = 	"Saint_Kitts_and_Nevis",
+                            	"St. Lucia" = 	"Saint_Lucia", 
+                            	"St. Vincent and the Grenadines" = "Saint_Vincent_and_the_Grenadines"
+                            
+                            ))
+```
+
+
+
+```{r}
+sdg_report_classifier_data$country <- gsub(" ", "_", sdg_report_classifier_data$country)
+```
+
+```{r}
+sdg_report_classifier_data <- sdg_report_classifier_data %>%
+  rename(geo_area_name = country)
+```
+
+
+```{r}
+sdg_report_classifier_data <- sdg_report_classifier_data %>% 
+  select(geo_area_name, 
+goal_1_dash,
+goal_2_dash,
+goal_3_dash,
+goal_4_dash,
+goal_5_dash,
+goal_6_dash,
+goal_7_dash,
+goal_8_dash,
+goal_9_dash,
+goal_10_dash,
+goal_11_dash,
+goal_12_dash,
+goal_13_dash,
+goal_14_dash,
+goal_15_dash,
+goal_16_dash,
+goal_17_dash)
+```
+
+
+
+Left join to match Sustainable Development Report SIDS(37) with all SIDS(54)
+```{r}
+sdg_report_classifier_data <- left_join(sdg_indicators, sdg_report_classifier_data, by = "geo_area_name")
+```
+
+
+
+
+```{r}
+sdg_report_classifier_data <- sdg_report_classifier_data %>% 
+  select(geo_area_name, 
+goal_1_dash,
+goal_2_dash,
+goal_3_dash,
+goal_4_dash,
+goal_5_dash,
+goal_6_dash,
+goal_7_dash,
+goal_8_dash,
+goal_9_dash,
+goal_10_dash,
+goal_11_dash,
+goal_12_dash,
+goal_13_dash,
+goal_14_dash,
+goal_15_dash,
+goal_16_dash,
+goal_17_dash)
+```
+
+Drop SIDS that were not a part of the 2022 Sustainable Development Report
+```{r}
+sdg_report_classifier_data <- drop_na(sdg_report_classifier_data)
+```
+
+
+
+Step 4: Join Step 1 Data with Step 3 Data
+
+Join SIDS classification data with tier 1 and tier 2 indicator data for 37 SIDS
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators <- left_join(sdg_report_classifier_data, sdg_indicators_missRanger, by = "geo_area_name")
+```
+
+
+Join Isolation Data
+```{r}
+isolation <- read_csv(here("data/sdg_data/isolation_evi.csv"))
+```
+
+```{r}
+isolation <- isolation %>%
+  rename(geo_area_name = Country_EVI)
+```
+
+
+```{r}
+isolation$geo_area_name <- gsub(" ", "_", isolation$geo_area_name)
+```
+
+
+```{r}
+isolation <- isolation %>%
+     mutate(geo_area_name = recode(geo_area_name, 
+                            "Bahama" = 'Bahamas',
+                             "Fed._States_Micronesia" = 	"Micronesia_(Federated_States_of)",
+                            "St._Kitts_and_Nevis" = 	"Saint_Kitts_and_Nevis",
+                            	"St._Vincent_&_Grenadines" = "Saint_Vincent_and_the_Grenadines",
+                            "Antigua_&_Barbuda" = "Antigua_and_Barbuda",
+                            "Sao_Tome_&_Principe" =  "Sao_Tome_and_Principe",
+                            "Cape_Verde" = "Cabo_Verde",
+                            "Dominican_Rep" = "Dominican_Republic"
+                            
+                            ))
+```
+
+
+
+
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation <- left_join(sdg_report_classifier_data_missRanger_sdg_indicators, isolation, by = "geo_area_name")
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(geo_area_name, ISOL)
+
+# Timor Leste - 575
+# Dominica - 568
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>%                               # Replacing values
+  mutate(ISOL = replace(ISOL, geo_area_name == "Dominica", 568))
+
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>%                               # Replacing values
+  mutate(ISOL = replace(ISOL, geo_area_name == "Timor-Leste", 575))
+
+```
+
+
+```{r}
+# sdg_report_classifier_data_missRanger_sdg_indicators_isolation <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+#   remove_rownames %>% 
+#   column_to_rownames(var="geo_area_name")
+```
+
+
+
+```{r}
+sdg_actual_classifier_data <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  select(geo_area_name, 
+goal_1_dash,
+goal_2_dash,
+goal_3_dash,
+goal_4_dash,
+goal_5_dash,
+goal_6_dash,
+goal_7_dash,
+goal_8_dash,
+goal_9_dash,
+goal_10_dash,
+goal_11_dash,
+goal_12_dash,
+goal_13_dash,
+goal_14_dash,
+goal_15_dash,
+goal_16_dash,
+goal_17_dash)
+```
+
+```{r}
+# sdg_actual_classifier_data <- sdg_actual_classifier_data %>%
+#   remove_rownames %>%
+#   column_to_rownames(var="geo_area_name")
+```
+
+
+
+```{r}
+# sdg_actual_classifier_data <- t(sdg_actual_classifier_data)
+# 
+# sdg_actual_classifier_data <- as.data.frame(sdg_actual_classifier_data)
+# 
+# sdg_actual_classifier_matrix<- as.matrix(sdg_actual_classifier_data)
+```
+
+```{r}
+sdg_actual_classifier_data_longer <- sdg_actual_classifier_data %>% 
+  pivot_longer(! geo_area_name, names_to = "Color", values_to = "Count")
+```
+
+
+
+
+
+```{r}
+tile <- ggplot(sdg_actual_classifier_data_longer, 
+       aes(x = geo_area_name,
+           y = Color, 
+           fill = Count)) + 
+  geom_tile(show.legend = FALSE) +
+  coord_flip() +
+  scale_fill_manual(values = c("#20854EFF", "#80796BFF", "#CC8214FF", "#A73030FF", "#EFC000FF" )) +
+  theme(axis.text.x = element_text(angle = 45,  hjust=1)) 
+
+ggplotly(tile)
+```
+
+
+
+
+```{r}
+sdg_actual_classifier_data_longer_all <- tibble::rownames_to_column(sdg_actual_classifier_data, "goal")
+sdg_actual_classifier_data_longer_all <- tibble::column_to_rownames(sdg_actual_classifier_data, var = "rowname")
+```
+
+
+
+```{r}
+sdg_actual_classifier_data_longer <- sdg_actual_classifier_data_longer %>% 
+  pivot_longer(! goal, names_to = "Color", values_to = "Count")
+  
+```
+
+
+
+```{r}
+sdg_actual_classifier_data <- sdg_actual_classifier_data %>% 
+  mutate(green_count = apply(sdg_actual_classifier_data, 1, function(x) length(which(x=="green"))))
+
+
+sdg_actual_classifier_data <- sdg_actual_classifier_data %>% 
+  mutate(red_count = apply(sdg_actual_classifier_data, 1, function(x) length(which(x=="red"))))
+
+sdg_actual_classifier_data <- sdg_actual_classifier_data %>% 
+  mutate(yellow_count = apply(sdg_actual_classifier_data, 1, function(x) length(which(x=="yellow"))))
+
+sdg_actual_classifier_data <- sdg_actual_classifier_data %>% 
+  mutate(orange_count = apply(sdg_actual_classifier_data, 1, function(x) length(which(x=="orange"))))
+
+sdg_actual_classifier_data <- sdg_actual_classifier_data %>% 
+  mutate(grey_count = apply(sdg_actual_classifier_data, 1, function(x) length(which(x=="grey"))))
+```
+
+```{r}
+sdg_actual_classifier_data_longer <- sdg_actual_classifier_data %>% 
+  select(green_count,
+         yellow_count, 
+         orange_count,
+         red_count,
+         grey_count)
+```
+
+```{r}
+sdg_actual_classifier_data_longer <- tibble::rownames_to_column(sdg_actual_classifier_data_longer, "goal")
+```
+
+
+
+```{r}
+sdg_actual_classifier_data_longer <- sdg_actual_classifier_data_longer %>% 
+  pivot_longer(! goal, names_to = "Color", values_to = "Count")
+  
+```
+
+
+```{r}
+ggplot(data = sdg_actual_classifier_data_longer, aes(fill = Color, 
+                                                     y = goal, 
+                                                     x = Count)) + 
+  geom_col(stat = 'identity') + 
+  theme_bw() +
+  scale_fill_manual(values = c("#20854EFF", "#80796BFF", "#CC8214FF", "#A73030FF", "#EFC000FF" ))
+```

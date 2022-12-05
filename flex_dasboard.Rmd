@@ -1,0 +1,84 @@
+---
+title: "SIDS UN Dasboard"
+output: 
+  flexdashboard::flex_dashboard:
+    logo: cifal_logo.png
+    orientation: columns
+    social: menu
+    source_code: embed
+    theme: paper
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(ggplot2)
+# library(mgcv)
+library(shiny)
+library(flexdashboard)
+library(tidyverse)
+library(here)
+library(plotly)
+library(ggiraph)
+library(rsconnect)
+library(RColorBrewer)
+options(scipen = 99)
+
+
+```
+
+```{r}
+sids_data <- read_csv(here("most_recent/data_cleaned_and_summarized/sdg_indicators_joined_most_recent.csv"))
+```
+
+
+```{r}
+dataset <- sids_data
+```
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+checkboxInput('smooth', 'Smooth', value = FALSE)
+
+selectInput('x', 'X', names(dataset))
+selectInput('y', 'Y', names(dataset), names(dataset)[[2]])
+selectInput('color', 'Color', c('None', names(dataset)))
+
+selectInput('facet_row', 'Facet Row',
+c(None='.', names(dataset)))
+selectInput('facet_col', 'Facet Column',
+c(None='.', names(dataset)))
+```
+
+Outputs
+-----------------------------------------------------------------------
+
+### Data
+
+```{r}
+
+
+renderPlotly({
+  my_gg <- ggplot(data = dataset, aes_string(x=input$x, y=input$y, label = "geo_area_name")) + geom_point() +
+    theme_minimal()
+    
+  
+
+ 
+  if (input$color != 'None')
+    my_gg <- my_gg + aes_string(color=input$color)
+
+  facets <- paste(input$facet_row, '~', input$facet_col)
+  if (facets != '. ~ .')
+    my_gg <- my_gg + facet_grid(facets)
+
+  if (input$smooth)
+    my_gg <- my_gg + geom_smooth()
+
+   print(my_gg)
+})
+
+
+```

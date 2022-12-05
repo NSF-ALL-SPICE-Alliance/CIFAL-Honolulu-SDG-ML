@@ -87,6 +87,7 @@ sdg_indicators <- sdg_indicators %>%
 
 *Determine how much data we want to impute
   - Here, I decided that I only want to include columns (indicators) in which at least 40% of the SIDS have data for
+  - jstor range of thresholds
 ```{r}
 sdg_indicators_less_na <- sdg_indicators[, which(colMeans(!is.na(sdg_indicators)) > 0.4)]
 ```
@@ -447,11 +448,86 @@ plot_predict_interaction(miss_Ranger_rf_international_poverty, sdg_indicators_mi
 ```
 
 
+Criminal Justice 
+
+```{r}
+miss_Ranger_rf_homicide <- randomForest(number_of_victims_of_intentional_homicide_per_100_000_population_by_sex_victims_per_100_000_population ~ ., data = sdg_indicators_missRanger_no_variance, 
+                   importance = TRUE)
+```
 
 
 
 ```{r}
-p <- ggplot(sdg_indicators_missRanger_no_variance, aes(x = 	
+miss_Ranger_rf_homicide
+```
+
+
+```{r}
+ImpData_homicide <- as.data.frame(importance(miss_Ranger_rf_homicide))
+ImpData_homicide$Var.Names <- row.names(miss_Ranger_rf_homicide)
+# 
+
+
+View(ImpData_homicide)
+
+names(ImpData_homicide)[names(ImpData_homicide) == '%IncMSE'] <- 'per_inc_mse'
+
+
+ImpData_homicide_highest_mse <- ImpData_homicide %>% 
+  slice_max(per_inc_mse, n = 15)
+```
+
+
+
+
+```{r}
+ImpData_homicide_highest_mse %>% 
+  kbl() %>% 
+  kable_styling()
+
+```
+
+```{r}
+ImpData_homicide_highest_mse <- ImpData_homicide_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['per_inc_mse']]))
+```
+
+
+
+```{r}
+ggplot(ImpData_homicide_highest_mse, aes(x=Var.Names, y=`per_inc_mse`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`per_inc_mse`), color="skyblue") +
+  geom_point(aes(size = IncNodePurity), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
+
+```{r}
+plot_predict_interaction(miss_Ranger_rf_homicide, sdg_indicators_missRanger_no_variance, "number_of_victims_of_intentional_homicide_by_sex_number", "universal_health_coverage_uhc_service_coverage_index")
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+p <- ggplot(ImpData_homicide_highest_mse, aes(x = 	
 installed_renewable_electricity_generating_capacity_watts_per_capita,
                                                 y = proportion_of_population_below_international_poverty_line_percent, label = row.names(sdg_indicators_missRanger_no_variance))) +
   geom_point()

@@ -25,7 +25,8 @@ if (!require(librarian)){
 librarian::shelf(tidyverse,
                 here,
                 janitor,
-                dplyr)
+                dplyr,
+                gridExtra)
 
 options(scipen = 99)
 ```
@@ -155,3 +156,35 @@ most_recent_data <- as.data.frame(most_recent_data)
 ggplot(data = most_recent_data, aes(x = Var1, y = Freq)) +
   geom_col()
 ```
+
+
+
+```{r}
+goal3_smr <- goal3 %>% 
+  filter(SeriesDescription == "Suicide_mortality_rate,_by_sex_(deaths_per_100,000_population)" )
+
+unique(goal3_smr$GeoAreaName)
+```
+```{r}
+plot1 <- ggplot(data = goal3_wider, aes(x = suicide_mortality_rate_by_sex_deaths_per_100_000_population, 
+                             y = geo_area_name)) +
+  geom_bar(stat = "identity")
+```
+
+```{r}
+goal3_mortality <- goal3 %>% 
+  filter(SeriesDescription == "Mortality_rate_attributed_to_cardiovascular_disease,_cancer,_diabetes_or_chronic_respiratory_disease_(probability)" )
+
+unique(goal3_mortality$GeoAreaName)
+```
+
+```{r}
+plot2 <- ggplot(data = goal3_wider, aes(x = mortality_rate_attributed_to_cardiovascular_disease_cancer_diabetes_or_chronic_respiratory_disease_probability, 
+                             y = geo_area_name)) +
+  geom_bar(stat = "identity")
+```
+
+```{r}
+grid.arrange(plot1, plot2)
+```
+

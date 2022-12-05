@@ -4,7 +4,7 @@ author: "Connor Flynn"
 date: "8/9/2022"
 output: html_document
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -269,9 +269,16 @@ sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_17_dash <- a
 
 Goal 1
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_1_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_1_dash)
-```
+
+What are the Tier 1 Indicators for this Goal? (What are we really predicting)
+
+Indicators 
+- poverty headcount ratio at $1.90/day (%)
+- poverty headcount ratio at $3.20/day (%)
+- poverty rate after taxes and transfers
+
+
+
 
 
 ```{r}

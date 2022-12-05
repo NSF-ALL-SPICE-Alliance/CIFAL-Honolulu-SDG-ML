@@ -72,3 +72,6 @@ sdg_indicators_joined_most_recent <- join_all(dfs = dfs, type = "full", by = "ge
 write_csv(sdg_indicators_joined_most_recent, here("most_recent/data_cleaned_and_summarized/sdg_indicators_joined_most_recent.csv"))
 ```
 
+
+
+

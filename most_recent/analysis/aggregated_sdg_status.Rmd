@@ -44,7 +44,7 @@ sdg_indicators_less_na <- sdg_indicators[, which(colMeans(!is.na(sdg_indicators)
 
 
 Impute using missRanger function (Random Forest Imputation)
-```{r}
+```{r, message=FALSE}
 sdg_indicators_missRanger <- missRanger(sdg_indicators_less_na, 
                                         formula = . ~ ., 
                                         num.trees = 1000,
@@ -154,6 +154,28 @@ sdg_report_classifier_data <- drop_na(sdg_report_classifier_data)
 ```
 
 
+```{r}
+sdg_report_classifier_data_matrix <- sdg_report_classifier_data %>% 
+  select(-geo_area_name)
+  
+```
+
+
+```{r}
+sdg_report_classifier_data_matrix[sdg_report_classifier_data_matrix == "yellow"] <- "green"
+
+sdg_report_classifier_data_matrix[sdg_report_classifier_data_matrix == "orange"] <- "green"
+
+sdg_report_classifier_data_matrix[sdg_report_classifier_data_matrix == "grey"] <- "red"
+```
+
+```{r}
+# model.matrix(~0+., data=sdg_report_classifier_data_matrix) %>% 
+#   cor(use="pairwise.complete.obs") %>% 
+#   ggcorrplot(show.diag = F, type = "lower", lab=TRUE, lab_size=1, 
+# tl.cex = 7)
+```
+
 
 Step 4: Join Step 1 Data with Step 3 Data
 
@@ -231,13 +253,12 @@ Red = Red/Grey
 
 
 ```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation[sdg_report_classifier_data_missRanger_sdg_indicators_isolation == "orange"] <- "green"
-```
-
-```{r}
 sdg_report_classifier_data_missRanger_sdg_indicators_isolation[sdg_report_classifier_data_missRanger_sdg_indicators_isolation == "yellow"] <- "green"
 ```
 
+```{r}
+sdg_report_classifier_data_missRanger_sdg_indicators_isolation[sdg_report_classifier_data_missRanger_sdg_indicators_isolation == "orange"] <- "red"
+```
 
 ```{r}
 sdg_report_classifier_data_missRanger_sdg_indicators_isolation[sdg_report_classifier_data_missRanger_sdg_indicators_isolation == "grey"] <- "red"
@@ -297,15 +318,21 @@ sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_17_dash <- a
 
 ```
 
+
+
 Goal 1
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_1_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_1_dash)
-```
+
+What are the Tier 1 Indicators for this Goal? (What are we really predicting)
+
+Indicators 
+- poverty headcount ratio at $1.90/day (%)
+- poverty headcount ratio at $3.20/day (%)
+- poverty rate after taxes and transfers
 
 
 ```{r}
-missRanger_rf_goal1_dash<- randomForest(goal_1_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+missRanger_rf_goal1_dash <- randomForest(goal_1_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
                    importance = TRUE, ntree = 500)
 ```
 
@@ -320,7 +347,7 @@ Partial Plot
 ```{r}
 df_rf <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
   mutate(predicted = predict(missRanger_rf_goal1_dash))
-# Get performance meas
+
 ```
 
 
@@ -342,15 +369,14 @@ imp_df %>%
   labs(title = "Variable Importance, Sonar Dataset",
        subtitle = "Random Forests (N = 500)",
        x= "",
-       y= "Mean Decrease in Accuracy",
-       caption = "sethdobson.netlify.com") +
+       y= "Mean Decrease in Accuracy") +
   theme(plot.caption = element_text(face = "italic"))
 
 ```
 
 ```{r}
 # Save top predictor names as character vector
-nm <- as.character(imp_df$names)[1:12]
+nm <- as.character(imp_df$names)[3]
 # Get partial depedence values for top predictors
 pd_df <- partial_dependence(fit = missRanger_rf_goal1_dash,
                          vars = nm,
@@ -391,7 +417,9 @@ perfectPartialPlot <- function(df, x, y){
          y = paste("Proportion of votes for", y)) +
     facet_wrap(~predictor, scale = "free") +
     scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
-    theme(plot.title = element_text(hjust = 0.5))
+    theme(plot.title = element_text(hjust = 0.5)) +
+  theme_minimal() +
+  scale_color_manual(values=c("#E69F00"))
   
 }
 ```
@@ -437,14 +465,41 @@ ggplot(ImpData_missRanger_rf_goal1_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
     axis.ticks.y = element_blank()
   )
 ```
+```{r}
+s <- ggplot(sdg_report_classifier_data_missRanger_sdg_indicators_isolation, aes(x = 	
+proportion_of_youth_not_in_education_employment_or_training_by_sex_and_age_percent,
+                                                y = rownames(sdg_report_classifier_data_missRanger_sdg_indicators_isolation)), label = rownames(sdg_report_classifier_data_missRanger_sdg_indicators_isolation)) +
+  geom_point()
 
+ggplotly(s)
+```
+
+```{r}
+s <- ggplot(sdg_report_classifier_data_missRanger_sdg_indicators_isolation, aes(x = employed_population_below_international_poverty_line_by_sex_and_age_percent, y = 
+       proportion_of_youth_not_in_education_employment_or_training_by_sex_and_age_percent, label = rownames(sdg_report_classifier_data_missRanger_sdg_indicators_isolation))) + 
+geom_point()
+  
+ggplotly(s)
+```
 
 
 Goal 2 
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_2_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_2_dash)
-```
+
+What are the Tier 1 Indicators for this Goal? (What are we really predicting)
+
+Indicators
+- Prevalence of undernourishment (%)
+- Prevalence of stunting in children under 5 years of age (%)
+- Prevalence of wasting in children under 5 years of age (%)
+- Prevalence of obesity, BMI ≥ 30 (% of adult population)
+- Human Trophic Level (best 2-3 worst)
+- Cereal yield (tonnes per hectare of harvested land)
+- Sustainable Nitrogen Management Index (best 0-1.41 worst)
+- Yield gap closure (% of potential yield)
+- Exports of hazardous pesticides (tonnes per million population)
+
+
 
 
 ```{r}
@@ -482,15 +537,14 @@ imp_df_2 %>%
   labs(title = "Variable Importance, Sonar Dataset",
        subtitle = "Random Forests (N = 500)",
        x= "",
-       y= "Mean Decrease in Accuracy",
-       caption = "sethdobson.netlify.com") +
+       y= "Mean Decrease in Accuracy") +
   theme(plot.caption = element_text(face = "italic"))
 
 ```
 
 ```{r}
 # Save top predictor names as character vector
-nm_2 <- as.character(imp_df_2$names)[4:4]
+nm_2 <- as.character(imp_df_2$names)[1:16]
 # Get partial depedence values for top predictors
 pd_df_2 <- partial_dependence(fit = missRanger_rf_goal2_dash,
                          vars = nm_2,
@@ -506,7 +560,7 @@ plot_pd(pd_df_2)
 
 
 ```{r}
-perfectPartialPlot(df = pd_df_2, x = nm_2, y = "red")
+perfectPartialPlot(df = pd_df_2, x = nm_2, y = "green")
 ```
 
 
@@ -567,9 +621,29 @@ ggplot(ImpData_missRanger_rf_goal2_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
 
 Goal 3
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_3_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_3_dash)
-```
+What are the Tier 1 Indicators for this Goal? (What are we really predicting)
+
+
+Indicators 
+- Maternal mortality rate (per 100,000 live births) 
+- Neonatal mortality rate (per 1,000 live births)
+- Mortality rate, under-5 (per 1,000 live births)
+- Incidence of tuberculosis (per 100,000 population)
+- New HIV infections (per 1,000 uninfected population)
+- Age-standardized death rate due to cardiovascular disease, cancer, diabetes, or chronic respiratory disease in adults aged 30–70 years (%)
+- Age-standardized death rate attributable to household air pollution and ambient air pollution (per 100,000 population)
+- Traffic deaths (per 100,000 population)
+- Life expectancy at birth (years)
+- Adolescent fertility rate (births per 1,000 females aged 15 to 19)
+- Births attended by skilled health personnel (%)
+- Surviving infants who received 2 WHO-recommended vaccines (%)
+- Universal health coverage (UHC) index of service coverage (worst 0-100 best)
+- Subjective well-being (average ladder score, worst 0-10 best)
+- Gap in life expectancy at birth among regions (years)
+- Gap in self-reported health status by income (percentage points)
+- Daily smokers (% of population aged 15 and over)
+
+
 
 
 ```{r}
@@ -608,8 +682,7 @@ imp_df_3 %>%
   labs(title = "Variable Importance, Sonar Dataset",
        subtitle = "Random Forests (N = 500)",
        x= "",
-       y= "Mean Decrease in Accuracy",
-       caption = "sethdobson.netlify.com") +
+       y= "Mean Decrease in Accuracy") +
   theme(plot.caption = element_text(face = "italic"))
 
 ```
@@ -632,16 +705,57 @@ plot_pd(pd_df_3)
 
 
 ```{r}
-perfectPartialPlot(df = pd_df_3, x = nm_3, y = "red")
+perfectPartialPlot(df = pd_df_3, x = nm_3, y = "green") 
 ```
 
+```{r}
+ImpData_missRanger_rf_goal3_dash <- as.data.frame(importance(missRanger_rf_goal3_dash))
+ImpData_missRanger_rf_goal3_dash$Var.Names <- row.names(ImpData_missRanger_rf_goal3_dash)
+
+
+
+
+
+
+ImpData_missRanger_rf_goal3_dash_highest_mse <- ImpData_missRanger_rf_goal3_dash %>% 
+  slice_max(MeanDecreaseAccuracy, n = 15)
+
+
+```
+
+```{r}
+ImpData_missRanger_rf_goal3_dash_highest_mse <- ImpData_missRanger_rf_goal3_dash_highest_mse %>% mutate(Var.Names = fct_reorder(Var.Names, .[['MeanDecreaseAccuracy']]))
+```
+
+
+```{r}
+ggplot(ImpData_missRanger_rf_goal3_dash_highest_mse, aes(x=Var.Names, y=`MeanDecreaseAccuracy`)) +
+  geom_segment( aes(x=Var.Names, xend=Var.Names, y=0, yend=`MeanDecreaseAccuracy`), color="skyblue") +
+  geom_point(aes(size = MeanDecreaseGini), color="blue", alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
 
 
 Goal 4 
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_4_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_4_dash)
-```
+Indicators
+- Participation rate in pre-primary organized learning (% of children aged 4 to 6)
+- Net primary enrollment rate (%)
+- Lower secondary completion rate (%)
+- Literacy rate (% of population aged 15 to 24)
+- Tertiary educational attainment (% of population aged 25 to 34)
+- PISA score (worst 0-600 best)
+- Variation in science performance explained by socio-economic status (%)
+- Underachievers in science (% of 15-year-olds) 
+
+
 
 
 ```{r}
@@ -670,19 +784,32 @@ imp_df_4 <- data.frame(importance(missRanger_rf_goal4_dash, scale = FALSE, type 
 imp_df_4 <- imp_df_4 %>% 
   mutate(names = rownames(imp_df_4)) %>% 
   arrange(desc(MeanDecreaseAccuracy))
+
+
+
+
 # Plot mean decreased accuracy
 imp_df_4 %>% 
   top_n(10, MeanDecreaseAccuracy) %>% 
   ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
   geom_col() +
+  theme_minimal() +
+  scale_fill_brewer(palette="Dark2") +
   coord_flip() +
-  labs(title = "Variable Importance, Sonar Dataset",
+  labs(title = "Variable Importance in Predicting SDG 4 Status",
        subtitle = "Random Forests (N = 500)",
        x= "",
-       y= "Mean Decrease in Accuracy",
-       caption = "sethdobson.netlify.com") +
-  theme(plot.caption = element_text(face = "italic"))
+       y= "Mean Decrease in Accuracy") +
+  theme(plot.caption = element_text(face = "bold"),
+        axis.text.y  = element_text(size = 5, color = "black")) 
 
+```
+
+
+```{r}
+ggplot(sdg_indicators, aes(x = ilo_proportion_of_mothers_with_newborns_receiving_maternity_cash_benefit_percent, 
+                           y = geo_area_name)) +
+  geom_point()
 ```
 
 ```{r}
@@ -698,12 +825,16 @@ pd_df_4 <- partial_dependence(fit = missRanger_rf_goal4_dash,
 
 ```{r}
 # Plot partial dependence using edarf
-plot_pd(pd_df_4)
+plot_pd(pd_df_4) +
+  theme_minimal() +
+  scale_color_brewer(palette="Dark2") +
+  labs(title = "Partial Dependence Plot Describing Maternity Benefits and SDG4 Attainment")
 ```
 
 
 ```{r}
-perfectPartialPlot(df = pd_df_4, x = nm_4, y = "red")
+perfectPartialPlot(df = pd_df_4, x = nm_4, y = "green") 
+
 ```
 
 
@@ -751,16 +882,31 @@ ggplot(ImpData_missRanger_rf_goal4_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
     axis.ticks.y = element_blank()
   )
 ```
+```{r}
+missRanger_rf_goal4_reading_math<- randomForest(proportion_of_teachers_with_the_minimum_required_qualifications_by_education_level_and_sex_percent ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
 
+```{r}
+missRanger_rf_goal4_reading_math
+```
+```{r}
+ggplot(sdg_indicators, aes(x = participation_rate_in_organized_learning_one_year_before_the_official_primary_entry_age_by_sex_percent,
+                            y = ilo_proportion_of_mothers_with_newborns_receiving_maternity_cash_benefit_percent)) +
+  geom_point()
+```
 
 
 Goal 5 
 
+Indicators
 
+- Demand for family planning satisfied by modern methods (% of females aged 15 to 49)
+- Ratio of female-to-male mean years of education received (%)
+- Ratio of female-to-male labor force participation rate (%)
+- Seats held by women in national parliament (%)
+- Gender wage gap (% of male median wage)
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_5_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_5_dash)
-```
 
 
 ```{r}
@@ -801,8 +947,7 @@ imp_df_5 %>%
   labs(title = "Variable Importance, Sonar Dataset",
        subtitle = "Random Forests (N = 500)",
        x= "",
-       y= "Mean Decrease in Accuracy",
-       caption = "sethdobson.netlify.com") +
+       y= "Mean Decrease in Accuracy") +
   theme(plot.caption = element_text(face = "italic"))
 
 ```
@@ -825,15 +970,8 @@ plot_pd(pd_df_5)
 
 
 ```{r}
-perfectPartialPlot(df = pd_df_5, x = nm_5, y = "red")
+perfectPartialPlot(df = pd_df_5, x = nm_5, y = "green")
 ```
-
-
-
-
-
-
-
 
 
 
@@ -879,9 +1017,16 @@ ggplot(ImpData_missRanger_rf_goal5_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
 
 Goal 6 
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_6_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_6_dash)
-```
+Indicators
+
+- Population using at least basic drinking water services (%)
+- Population using at least basic sanitation services (%)
+- Freshwater withdrawal (% of available freshwater resources)
+- Anthropogenic wastewater that receives treatment (%)
+- Scarce water consumption embodied in imports (m3 H2O eq/capita)
+- Population using safely managed water services (%)
+- Population using safely managed sanitation services (%)
+
 
 
 ```{r}
@@ -919,15 +1064,14 @@ imp_df_6 %>%
   labs(title = "Variable Importance, Sonar Dataset",
        subtitle = "Random Forests (N = 500)",
        x= "",
-       y= "Mean Decrease in Accuracy",
-       caption = "sethdobson.netlify.com") +
+       y= "Mean Decrease in Accuracy") +
   theme(plot.caption = element_text(face = "italic"))
 
 ```
 
 ```{r}
 # Save top predictor names as character vector
-nm_6 <- as.character(imp_df_6$names)[8:8]
+nm_6 <- as.character(imp_df_6$names)[1:7]
 # Get partial depedence values for top predictors
 pd_df_6 <- partial_dependence(fit = missRanger_rf_goal6_dash,
                          vars = nm_6,
@@ -990,13 +1134,18 @@ ggplot(ImpData_missRanger_rf_goal6_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
 
 Goal 7 
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_7_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_7_dash)
-```
+Indicators
+
+- Population with access to electricity (%)
+- Population with access to clean fuels and technology for cooking (%)
+- CO₂ emissions from fuel combustion per total electricity output (MtCO₂/TWh)
+- Share of renewable energy in total primary energy supply (%)
+
+
 
 
 ```{r}
-missRanger_rf_goal7_dash<- randomForest(goal_7_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+missRanger_rf_goal7_dash <- randomForest(goal_7_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
                    importance = TRUE)
 ```
 
@@ -1031,15 +1180,15 @@ imp_df_7 %>%
   labs(title = "Variable Importance, Sonar Dataset",
        subtitle = "Random Forests (N = 500)",
        x= "",
-       y= "Mean Decrease in Accuracy",
-       caption = "sethdobson.netlify.com") +
-  theme(plot.caption = element_text(face = "italic"))
+       y= "Mean Decrease in Accuracy") +
+   theme(plot.caption = element_text(face = "bold"),
+        axis.text.y  = element_text(size = 5, color = "black")) 
 
 ```
 
 ```{r}
 # Save top predictor names as character vector
-nm_7 <- as.character(imp_df_7$names)[10:10]
+nm_7 <- as.character(imp_df_7$names)[1:8]
 # Get partial depedence values for top predictors
 pd_df_7 <- partial_dependence(fit = missRanger_rf_goal7_dash,
                          vars = nm_7,
@@ -1055,7 +1204,7 @@ plot_pd(pd_df_7)
 
 
 ```{r}
-perfectPartialPlot(df = pd_df_7, x = nm_7, y = "red")
+perfectPartialPlot(df = pd_df_7, x = nm_7, y = "green")
 ```
 
 ```{r}
@@ -1064,7 +1213,7 @@ ImpData_missRanger_rf_goal7_dash$Var.Names <- row.names(ImpData_missRanger_rf_go
 
 
 
-ImpData_missRanger_rf_goal7_dash
+
 
 
 
@@ -1095,12 +1244,51 @@ ggplot(ImpData_missRanger_rf_goal7_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
   )
 ```
 
+```{r}
+s <- ggplot(sdg_report_classifier_data_missRanger_sdg_indicators_isolation, aes(x = 	
+renewable_energy_share_in_the_total_final_energy_consumption_percent,
+                                                y = rownames(sdg_report_classifier_data_missRanger_sdg_indicators_isolation)), label = rownames(sdg_report_classifier_data_missRanger_sdg_indicators_isolation)) +
+  geom_point()
+
+ggplotly(s)
+```
+
+```{r}
+renewable<- sdg_indicators %>% 
+  select(geo_area_name, renewable_energy_share_in_the_total_final_energy_consumption_percent,proportion_of_population_with_primary_reliance_on_clean_fuels_and_technology_percent, proportion_of_population_with_access_to_electricity_by_urban_rural_percent )
+```
+
+```{r}
+r <- ggplot(sdg_report_classifier_data_missRanger_sdg_indicators_isolation, aes(x = proportion_of_population_with_primary_reliance_on_clean_fuels_and_technology_percent, y = 
+       renewable_energy_share_in_the_total_final_energy_consumption_percent), label = rownames(sdg_report_classifier_data_missRanger_sdg_indicators_isolation)) +
+  
+  geom_point()
+
+ggplotly(r, tooltip = rownames(sdg_report_classifier_data_missRanger_sdg_indicators_isolation))
+```
 
 Goal 8 
 
+Indicators
+
+- Adjusted GDP growth (%)
+- Victims of modern slavery (per 1,000 population)
+- Adults with an account at a bank or other financial institution or with a mobile-money-service provider (% of population aged 15 or over)
+- Unemployment rate (% of total labor force, ages 15+)
+- Fundamental labor rights are effectively guaranteed (worst 0–1 best)
+- Fatal work-related accidents embodied in imports (per 100,000 population)
+- Employment-to-population ratio (%)
+- Youth not in employment, education or training (NEET) (% of population aged 15 to 29)
+
+
+
 
 ```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_8_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_8_dash)
+# row_names_df_to_remove<-c("Singapore","Cuba")
+# 
+# 
+# 
+# sdg_report_classifier_data_missRanger_sdg_indicators_isolation_no_sing <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation[!(row.names(sdg_report_classifier_data_missRanger_sdg_indicators_isolation) %in% row_names_df_to_remove),]
 ```
 
 
@@ -1140,15 +1328,14 @@ imp_df_8 %>%
   labs(title = "Variable Importance, Sonar Dataset",
        subtitle = "Random Forests (N = 500)",
        x= "",
-       y= "Mean Decrease in Accuracy",
-       caption = "sethdobson.netlify.com") +
+       y= "Mean Decrease in Accuracy") +
   theme(plot.caption = element_text(face = "italic"))
 
 ```
 
 ```{r}
 # Save top predictor names as character vector
-nm_8 <- as.character(imp_df_8$names)[5:5]
+nm_8 <- as.character(imp_df_8$names)[1:12]
 # Get partial depedence values for top predictors
 pd_df_8 <- partial_dependence(fit = missRanger_rf_goal8_dash,
                          vars = nm_8,
@@ -1222,9 +1409,18 @@ ggplot(ImpData_missRanger_rf_goal8_dash_highest_mse, aes(x=Var.Names, y=`MeanDec
 Goal 9 
 
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_9_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_9_dash)
-```
+Indicators
+
+- Population using the internet (%)
+- Mobile broadband subscriptions (per 100 population)
+- Logistics Performance Index: Quality of trade and transport-related infrastructure (worst 1-5 best)
+- The Times Higher Education Universities Ranking: Average score of top 3 universities (worst 0-100 best)
+- Articles published in academic journals (per 1,000 population)
+- Expenditure on research and development (% of GDP)
+- Researchers (per 1,000 employed population)
+- Triadic patent families filed (per million population)
+- Gap in internet access by income (percentage points)
+- Female share of graduates from STEM fields at the tertiary level (%)
 
 
 ```{r}
@@ -1263,8 +1459,7 @@ imp_df_9 %>%
   labs(title = "Variable Importance, Sonar Dataset",
        subtitle = "Random Forests (N = 500)",
        x= "",
-       y= "Mean Decrease in Accuracy",
-       caption = "sethdobson.netlify.com") +
+       y= "Mean Decrease in Accuracy") +
   theme(plot.caption = element_text(face = "italic"))
 
 ```
@@ -1287,7 +1482,7 @@ plot_pd(pd_df_9)
 
 
 ```{r}
-perfectPartialPlot(df = pd_df_9, x = nm_9, y = "red")
+perfectPartialPlot(df = pd_df_9, x = nm_9, y = "green")
 ```
 
 
@@ -1345,9 +1540,11 @@ getTree(missRanger_rf_goal9_dash, labelVar = TRUE)
 
 Goal 10 
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_10_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_10_dash)
-```
+Indicators
+
+- Gini coefficient
+- Palma ratio
+- Elderly poverty rate (% of population aged 66 or over)
 
 
 ```{r}
@@ -1388,15 +1585,14 @@ imp_df_10 %>%
   labs(title = "Variable Importance, Sonar Dataset",
        subtitle = "Random Forests (N = 500)",
        x= "",
-       y= "Mean Decrease in Accuracy",
-       caption = "sethdobson.netlify.com") +
+       y= "Mean Decrease in Accuracy") +
   theme(plot.caption = element_text(face = "italic"))
 
 ```
 
 ```{r}
 # Save top predictor names as character vector
-nm_10 <- as.character(imp_df_10$names)[1:12]
+nm_10 <- as.character(imp_df_10$names)[12:18]
 # Get partial depedence values for top predictors
 pd_df_10 <- partial_dependence(fit = missRanger_rf_goal10_dash,
                          vars = nm_10,
@@ -1467,9 +1663,16 @@ ggplot(ImpData_missRanger_rf_goal10_dash_highest_mse, aes(x=Var.Names, y=`MeanDe
 
 Goal 11
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_11_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_11_dash)
-```
+
+Indicators
+
+- Proportion of urban population living in slums (%)
+- Annual mean concentration of particulate matter of less than 2.5 microns in diameter (PM2.5) (μg/m³)
+- Access to improved water source, piped (% of urban population)
+- Satisfaction with public transport (%)
+- Population with rent overburden (%)
+
+
 
 
 ```{r}
@@ -1516,7 +1719,7 @@ imp_df_11 %>%
 
 ```{r}
 # Save top predictor names as character vector
-nm_11 <- as.character(imp_df_11$names)[1:12]
+nm_11 <- as.character(imp_df_11$names)[1:8]
 # Get partial depedence values for top predictors
 pd_df_11 <- partial_dependence(fit = missRanger_rf_goal11_dash,
                          vars = nm_11,
@@ -1532,7 +1735,7 @@ plot_pd(pd_df_11)
 
 
 ```{r}
-perfectPartialPlot(df = pd_df_11, x = nm_11, y = "grey")
+perfectPartialPlot(df = pd_df_11, x = nm_11, y = "green")
 ```
 
 
@@ -1597,9 +1800,18 @@ ggplot(ImpData_missRanger_rf_goal11_dash_highest_mse, aes(x=Var.Names, y=`MeanDe
 
 Goal 12 
 
-```{r}
-sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_12_dash <- as.factor(sdg_report_classifier_data_missRanger_sdg_indicators_isolation$goal_12_dash)
-```
+Indicators
+
+- Municipal solid waste (kg/capita/day)
+- Electronic waste (kg/capita)
+- Production-based SO₂ emissions (kg/capita)
+- SO₂ emissions embodied in imports (kg/capita) 
+- Production-based nitrogen emissions (kg/capita)
+- Nitrogen emissions embodied in imports (kg/capita)
+- Exports of plastic waste (kg/capita)
+- Non-recycled municipal solid waste (kg/capita/day)
+
+
 
 
 ```{r}
@@ -1720,6 +1932,13 @@ ggplot(ImpData_missRanger_rf_goal12_dash_highest_mse, aes(x=Var.Names, y=`MeanDe
 
 Goal 13
 
+- CO₂ emissions from fossil fuel combustion and cement production (tCO2/capita)
+- CO₂ emissions embodied in imports (tCO₂/capita)
+- CO₂ emissions embodied in fossil fuel exports (kg/capita)
+- Carbon Pricing Score at EUR60/tCO₂ (%, worst 0-100 best)
+
+* Maybe make yellow = red for this goal
+
 
 ```{r}
 missRanger_rf_goal13_dash<- randomForest(goal_13_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
@@ -1790,6 +2009,16 @@ perfectPartialPlot(df = pd_df_13, x = nm_13, y = "yellow")
 
 Goal 14
 
+Indicators
+
+- Mean area that is protected in marine sites important to biodiversity (%) 
+- Ocean Health Index: Clean Waters score (worst 0-100 best)
+- Fish caught from overexploited or collapsed stocks (% of total catch)
+- Fish caught by trawling or dredging (%)
+- Fish caught that are then discarded (%)
+- Marine biodiversity threats embodied in imports (per million population)
+
+
 ```{r}
 missRanger_rf_goal14_dash<- randomForest(goal_14_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
                    importance = TRUE)
@@ -1854,5 +2083,74 @@ perfectPartialPlot(df = pd_df_14, x = nm_14, y = "yellow")
 ```
 
 
+Goal 16 
+
+
+```{r}
+missRanger_rf_goal16_dash<- randomForest(goal_16_dash ~ ., data = sdg_report_classifier_data_missRanger_sdg_indicators_isolation, 
+                   importance = TRUE)
+```
+
+
+```{r}
+missRanger_rf_goal16_dash
+```
+
+
+```{r}
+df_rf_16 <- sdg_report_classifier_data_missRanger_sdg_indicators_isolation %>% 
+  mutate(predicted = predict(missRanger_rf_goal16_dash))
+
+```
+
+
+
+
+
+```{r}
+imp_df_16 <- data.frame(importance(missRanger_rf_goal16_dash, scale = FALSE, type = 1))
+# Tidy up and sort the data frame
+imp_df_16 <- imp_df_16 %>% 
+  mutate(names = rownames(imp_df_16)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+# Plot mean decreased accuracy
+imp_df_16 %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Sonar Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = "sethdobson.netlify.com") +
+  theme(plot.caption = element_text(face = "italic"))
+
+```
+
+```{r}
+# Save top predictor names as character vector
+nm_16 <- as.character(imp_df_16$names)[1:12]
+# Get partial depedence values for top predictors
+pd_df_16 <- partial_dependence(fit = missRanger_rf_goal16_dash,
+                         vars = nm_16,
+                         data = df_rf_16)
+                         # n = c(100, 1600))
+```
+
+
+```{r}
+# Plot partial dependence using edarf
+plot_pd(pd_df_16)
+```
+
+
+```{r}
+perfectPartialPlot(df = pd_df_16, x = nm_16, y = "green")
+```
+
+```{r}
+
+```
 
 
